@@ -3,8 +3,8 @@ package com.project.techstore.controllers;
 import com.project.techstore.dtos.AddressDTO;
 import com.project.techstore.dtos.UserDTO;
 import com.project.techstore.dtos.UserLoginDTO;
-import com.project.techstore.services.IAddressSerivce;
 import com.project.techstore.services.IUserService;
+import com.project.techstore.services.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +18,7 @@ import java.util.List;
 @RequestMapping("${api.prefix}/users")
 @RequiredArgsConstructor
 public class UserController {
-    private final IUserService userService;
-
-    private final IAddressSerivce addressSerivce;
+    private final UserService userService;
 
     @PostMapping("/register")
     public ResponseEntity<?> createUser(@RequestBody @Valid UserDTO userDTO, BindingResult result){
@@ -51,8 +49,8 @@ public class UserController {
                         .toList();
                 return ResponseEntity.badRequest().body(errorMessages);
             }
-            userService.loginUser(userLoginDTO);
-            return ResponseEntity.ok("Login successful");
+            String token = userService.loginUser(userLoginDTO);
+            return ResponseEntity.ok(token);
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -104,6 +102,4 @@ public class UserController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-
-
 }

@@ -2,8 +2,13 @@ package com.project.techstore.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -12,7 +17,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class User extends BaseEntity{
+public class User extends BaseEntity implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
@@ -48,4 +53,14 @@ public class User extends BaseEntity{
     @ManyToOne
     @JoinColumn(name = "role_id")
     private Role role;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.getName()));
+    }
+
+    @Override
+    public String getUsername() {
+        return getEmail();
+    }
 }

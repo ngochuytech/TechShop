@@ -18,6 +18,8 @@ public interface IUserService{
 
     User updateAddressUser(String id, AddressDTO addressDTO) throws Exception;
 
+    void resetPassword(String token, String newPassword) throws Exception;
+
     // Admin
     List<User> getUserList();
 

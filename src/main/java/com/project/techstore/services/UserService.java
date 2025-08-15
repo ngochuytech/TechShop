@@ -1,31 +1,49 @@
 package com.project.techstore.services;
 
+import com.project.techstore.components.JwtTokenProvider;
 import com.project.techstore.dtos.AddressDTO;
 import com.project.techstore.dtos.UserDTO;
 import com.project.techstore.dtos.UserLoginDTO;
 import com.project.techstore.exceptions.DataNotFoundException;
 import com.project.techstore.exceptions.InvalidParamException;
 import com.project.techstore.models.Address;
+import com.project.techstore.models.PasswordResetToken;
 import com.project.techstore.models.Role;
 import com.project.techstore.models.User;
 import com.project.techstore.repositories.AddressRepository;
+import com.project.techstore.repositories.PasswordResetTokenRepository;
 import com.project.techstore.repositories.RoleRepository;
 import com.project.techstore.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class UserService implements IUserService{
+public class UserService implements IUserService {
     private final UserRepository userRepository;
 
     private final RoleRepository roleRepository;
 
     private final AddressRepository addressRepository;
+
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+
+    private final PasswordEncoder passwordEncoder;
+
+    private final AuthenticationManager authenticationManager;
+
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Override
     public User createUser(UserDTO userDTO) throws Exception{
@@ -42,7 +60,7 @@ public class UserService implements IUserService{
 
         User newUser = User.builder()
                 .email(email)
-                .password(userDTO.getPassword())
+                .password(passwordEncoder.encode(userDTO.getPassword()))
                 .fullName(userDTO.getFullName())
                 .role(role)
                 .isActive(true)
@@ -52,13 +70,17 @@ public class UserService implements IUserService{
 
     @Override
     public String loginUser(UserLoginDTO userLoginDTO) throws Exception{
-        Optional<User> userList = userRepository.findByEmail(userLoginDTO.getEmail());
-        if(userList.isEmpty())
-            throw new Exception("Invalid email or password");
-        User user = userList.get();
-        if(!user.getPassword().equals(userLoginDTO.getPassword()))
-            throw new Exception("Wrong email or password");
-        return "Login successful";
+        User user = userRepository.findByEmail(userLoginDTO.getEmail())
+                .orElseThrow(() -> new Exception("Invalid email or password"));
+
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                userLoginDTO.getEmail(),
+                userLoginDTO.getPassword(),
+                user.getAuthorities()
+        ));
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        return jwtTokenProvider.generateToken(authentication);
     }
 
     @Override
@@ -120,6 +142,23 @@ public class UserService implements IUserService{
     }
 
     @Override
+    @Transactional
+    public void resetPassword(String token, String newPassword) throws Exception {
+        if(newPassword.isBlank())
+            throw new InvalidParamException("Mật khẩu không được để trống");
+        PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByToken(token)
+                .orElseThrow(() -> new InvalidParamException("Token không hợp lệ"));
+
+        if(passwordResetToken.getExpiryDate().isBefore(LocalDateTime.now()))
+            throw new Exception("Token đã hết hạn");
+
+        User user = passwordResetToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        passwordResetTokenRepository.delete(passwordResetToken);
+    }
+
+    @Override
     public List<User> getUserList() {
         return userRepository.findAll();
     }
@@ -131,4 +170,5 @@ public class UserService implements IUserService{
         user.setIsActive(isActive);
         return userRepository.save(user);
     }
+
 }
