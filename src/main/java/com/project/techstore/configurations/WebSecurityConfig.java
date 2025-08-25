@@ -2,18 +2,21 @@ package com.project.techstore.configurations;
 
 import com.project.techstore.filter.JwtAuthFilter;
 import com.project.techstore.models.Role;
-import com.project.techstore.models.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -28,11 +31,25 @@ public class WebSecurityConfig  {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
         http
+
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(request -> {
+                    var config = new CorsConfiguration();
+                    config.setAllowedOrigins(List.of("http://localhost:5173"));
+                    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    config.addAllowedHeader("*");
+                    config.setAllowCredentials(true);
+                    return config;
+                }))
+                .sessionManagement(c -> c.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(request -> request
                         .requestMatchers(
                                 String.format("%s/users/register", apiPrefix),
-                                String.format("%s/users/login", apiPrefix)
+                                String.format("%s/users/login", apiPrefix),
+                                String.format("%s/verify/**", apiPrefix),
+                                String.format("%s/users/auth/social-login", apiPrefix),
+                                String.format("%s/users/auth/social/callback", apiPrefix)
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, String.format("%s/notifications/**",apiPrefix)).hasAnyRole(Role.STAFF, Role.ADMIN)
                         .requestMatchers(HttpMethod.PUT, String.format("%s/notifications/**",apiPrefix)).hasAnyRole(Role.STAFF, Role.ADMIN)
@@ -56,8 +73,7 @@ public class WebSecurityConfig  {
 
                         .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .oauth2Login(Customizer.withDefaults());
         return http.build();
     }
 }

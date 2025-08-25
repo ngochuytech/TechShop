@@ -28,7 +28,7 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "phone", length = 10)
     private String phone;
 
-    @Column(name = "password", length = 255, nullable = false)
+    @Column(name = "password", length = 255)
     private String password;
 
     @Column(name = "full_name", length = 255, nullable = false)
@@ -45,6 +45,9 @@ public class User extends BaseEntity implements UserDetails {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
+
+    @Column(name = "enable", nullable = false)
+    private Boolean enable;
 
     @OneToOne
     @JoinColumn(name = "address_id")

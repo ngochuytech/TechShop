@@ -1,4 +1,4 @@
-package com.project.techstore.services;
+package com.project.techstore.services.user;
 
 import com.project.techstore.dtos.AddressDTO;
 import com.project.techstore.dtos.UserDTO;
@@ -20,6 +20,7 @@ public interface IUserService{
 
     void resetPassword(String token, String newPassword) throws Exception;
 
+    User getUserByToken(String token) throws Exception;
     // Admin
     List<User> getUserList();
 

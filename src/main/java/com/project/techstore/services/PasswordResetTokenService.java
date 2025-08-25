@@ -26,10 +26,11 @@ public class PasswordResetTokenService implements IPasswordResetTokenService{
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new DataNotFoundException("Email này không tồn tại"));
 
+        passwordResetTokenRepository.deleteByUser(user);
         String token = UUID.randomUUID().toString();
 
-        // Hết hạn sau 30 min
-        LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(30);
+        // Hết hạn sau 5 min
+        LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(5);
 
         PasswordResetToken passwordResetToken = PasswordResetToken.builder()
                 .token(token)

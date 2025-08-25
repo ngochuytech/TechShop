@@ -1,13 +1,13 @@
 package com.project.techstore.repositories;
 
-import com.project.techstore.models.PasswordResetToken;
 import com.project.techstore.models.User;
+import com.project.techstore.models.VerificationToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, String> {
-    Optional<PasswordResetToken> findByToken(String token);
+public interface VerificationTokenRepository extends JpaRepository<VerificationToken, String> {
+    Optional<VerificationToken> findByToken(String token);
 
     void deleteByUser(User user);
 }

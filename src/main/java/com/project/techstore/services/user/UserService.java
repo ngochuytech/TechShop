@@ -1,10 +1,11 @@
-package com.project.techstore.services;
+package com.project.techstore.services.user;
 
 import com.project.techstore.components.JwtTokenProvider;
 import com.project.techstore.dtos.AddressDTO;
 import com.project.techstore.dtos.UserDTO;
 import com.project.techstore.dtos.UserLoginDTO;
 import com.project.techstore.exceptions.DataNotFoundException;
+import com.project.techstore.exceptions.ExpiredTokenException;
 import com.project.techstore.exceptions.InvalidParamException;
 import com.project.techstore.models.Address;
 import com.project.techstore.models.PasswordResetToken;
@@ -15,11 +16,7 @@ import com.project.techstore.repositories.PasswordResetTokenRepository;
 import com.project.techstore.repositories.RoleRepository;
 import com.project.techstore.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +46,7 @@ public class UserService implements IUserService {
     public User createUser(UserDTO userDTO) throws Exception{
         String email = userDTO.getEmail();
         if(userRepository.existsByEmail(email)){
-            throw new Exception("Email already exists");
+            throw new Exception("Email đã tồn tại");
         }
         Role role = roleRepository.findById(userDTO.getRoleId())
                 .orElseThrow(() -> new Exception("Role not found"));
@@ -64,6 +61,7 @@ public class UserService implements IUserService {
                 .fullName(userDTO.getFullName())
                 .role(role)
                 .isActive(true)
+                .enable(false)
                 .build();
         return userRepository.save(newUser);
     }
@@ -71,17 +69,10 @@ public class UserService implements IUserService {
     @Override
     public String loginUser(UserLoginDTO userLoginDTO) throws Exception{
         User user = userRepository.findByEmail(userLoginDTO.getEmail())
-                .orElseThrow(() -> new Exception("Invalid email or password"));
-
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                userLoginDTO.getEmail(),
-                userLoginDTO.getPassword(),
-                user.getAuthorities()
-        ));
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        return jwtTokenProvider.generateToken(authentication);
+                .orElseThrow(() -> new Exception("Email hoặc mật khẩu không đúng!"));
+        return jwtTokenProvider.generateToken(user);
     }
+
 
     @Override
     public User updateUser(String id, UserDTO userDTO) throws Exception {
@@ -156,6 +147,16 @@ public class UserService implements IUserService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         passwordResetTokenRepository.delete(passwordResetToken);
+    }
+
+    @Override
+    public User getUserByToken(String token) throws Exception {
+        if(jwtTokenProvider.isTokenExpired(token)){
+            throw new ExpiredTokenException("Token đã hết hạn");
+        }
+        String email = jwtTokenProvider.getUsername(token);
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new DataNotFoundException("Không tìm thấy user với token này"));
     }
 
     @Override

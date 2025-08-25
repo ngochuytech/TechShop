@@ -1,7 +1,7 @@
 package com.project.techstore.controllers;
 
 import com.project.techstore.services.IPasswordResetTokenService;
-import com.project.techstore.services.IUserService;
+import com.project.techstore.services.user.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
