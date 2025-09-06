@@ -17,6 +17,9 @@ import com.project.techstore.repositories.RoleRepository;
 import com.project.techstore.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,6 +73,13 @@ public class UserService implements IUserService {
     public String loginUser(UserLoginDTO userLoginDTO) throws Exception{
         User user = userRepository.findByEmail(userLoginDTO.getEmail())
                 .orElseThrow(() -> new Exception("Email hoặc mật khẩu không đúng!"));
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                userLoginDTO.getEmail(),
+                userLoginDTO.getPassword(),
+                user.getAuthorities()
+        ));
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
         return jwtTokenProvider.generateToken(user);
     }
 

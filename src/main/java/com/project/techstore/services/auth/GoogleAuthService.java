@@ -30,8 +30,8 @@ public class GoogleAuthService {
     @Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
     private String redirectUri;
 
-    @Value("${spring.security.oauth2.client.registration.google.scope}")
-    private String scope;
+//    @Value("${spring.security.oauth2.client.registration.google.scope}")
+    private String scope = "openid email profile";
 
     public String generateAuthUrl(){
         return "https://accounts.google.com/o/oauth2/v2/auth" +

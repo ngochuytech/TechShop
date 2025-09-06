@@ -14,5 +14,12 @@ public interface ProductRepository extends JpaRepository<Product, String> {
             "where pm.category.id = :categoryId")
     List<Product> findByCategory(@Param("categoryId") Long categoryId);
 
+    List<Product> findByProductModel_Category_Name(String categoryName);
+
+    List<Product> findByProductModel_Category_NameAndProductModel_Brand_Name(
+            String categoryName,
+            String brandName
+    );
+
     void deleteByProductModelId(Long productModelId);
 }

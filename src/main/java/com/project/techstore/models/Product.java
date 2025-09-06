@@ -3,6 +3,8 @@ package com.project.techstore.models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Entity
 @Table(name = "Products")
 @Getter
@@ -18,6 +20,9 @@ public class Product extends BaseEntity{
     @Column(name = "name", length = 500, nullable = false)
     private String name;
 
+    @Column(name = "image")
+    private String image;
+
     @Column(name = "price", nullable = false)
     private Long price;
 
@@ -27,10 +32,10 @@ public class Product extends BaseEntity{
     @Column(name = "stock")
     private Integer stock;
 
-    @Column(columnDefinition = "JSON")
-    private String spec;
-
     @ManyToOne
     @JoinColumn(name = "product_model_id")
     private ProductModel productModel;
+
+    @OneToMany(mappedBy = "product")
+    private List<ProductAttribute> productAttributes;
 }

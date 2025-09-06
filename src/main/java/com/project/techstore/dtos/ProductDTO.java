@@ -17,19 +17,19 @@ public class ProductDTO {
     @Size(max = 500, message = "The maximum length of the name is 500 characters")
     private String name;
 
+    @JsonProperty("image")
+    private String image;
+
     @JsonProperty("price")
     @NotNull(message = "Price is required")
-    @Pattern(regexp = "^\\d+$", message = "Price must contain only numbers")
     @PositiveOrZero(message = "Price must be a positive number")
     private Long price;
 
     @JsonProperty("price_discount")
-    @Pattern(regexp = "^\\d+$", message = "Price discount must contain only numbers")
     @PositiveOrZero(message = "Price discount must be a positive number")
     private Long priceDiscount;
 
     @JsonProperty("stock")
-    @Pattern(regexp = "^\\d+$", message = "Stock must contain only numbers")
     @PositiveOrZero(message = "Stock must be a positive number")
     private Integer stock;
 

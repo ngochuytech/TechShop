@@ -1,8 +1,11 @@
 package com.project.techstore.controllers;
 
 import com.project.techstore.dtos.ProductDTO;
+import com.project.techstore.dtos.ProductFilterDTO;
 import com.project.techstore.models.Product;
-import com.project.techstore.services.IProductService;
+import com.project.techstore.responses.ApiResponse;
+import com.project.techstore.responses.product.ProductRespone;
+import com.project.techstore.services.product.IProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +14,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("${api.prefix}/products")
@@ -31,10 +35,42 @@ public class ProductController {
     @GetMapping("/category/{id}")
     public ResponseEntity<?> getProductByCategory(@PathVariable("id") Long categoryId){
         try {
-            List<Product> productList = productService.getProductByCategory(categoryId);
-            return ResponseEntity.ok(productList);
+            List<ProductRespone> productResponeList = productService.getProductByCategory(categoryId);
+            return ResponseEntity.ok(ApiResponse.ok(productResponeList));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/category")
+    public ResponseEntity<?> getProductByCategory(@RequestParam("category") String categoryName){
+        try {
+            List<ProductRespone> productResponeList = productService.getProductByCategory(categoryName);
+            return ResponseEntity.ok(ApiResponse.ok(productResponeList));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/")
+    public ResponseEntity<?> getProductByCategoryAndBrand(@RequestParam("category") String categoryName,
+                                                          @RequestParam("brand") String brandName){
+        try {
+            List<ProductRespone> productResponeList = productService.getProductByCategoryAndBrand(categoryName, brandName);
+            return ResponseEntity.ok(ApiResponse.ok(productResponeList));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/filters")
+    public ResponseEntity<?> getProductBySpecs(
+            @RequestBody ProductFilterDTO filter) throws Exception {
+        try{
+            List<ProductRespone> productResponeList = productService.filterProducts(filter);
+            return ResponseEntity.ok(ApiResponse.ok(productResponeList));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 
