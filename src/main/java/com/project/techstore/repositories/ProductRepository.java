@@ -10,9 +10,7 @@ import java.util.List;
 public interface ProductRepository extends JpaRepository<Product, String> {
     List<Product> findByProductModelId(Long id);
 
-    @Query("SELECT p FROM Product p JOIN p.productModel pm " +
-            "where pm.category.id = :categoryId")
-    List<Product> findByCategory(@Param("categoryId") Long categoryId);
+    List<Product> findByProductModel_CategoryId(Long categoryId);
 
     List<Product> findByProductModel_Category_Name(String categoryName);
 

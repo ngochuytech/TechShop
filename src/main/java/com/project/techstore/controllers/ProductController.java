@@ -52,9 +52,9 @@ public class ProductController {
         }
     }
 
-    @GetMapping("/")
-    public ResponseEntity<?> getProductByCategoryAndBrand(@RequestParam("category") String categoryName,
-                                                          @RequestParam("brand") String brandName){
+    @GetMapping("/category/{category}/brand/{brand}")
+    public ResponseEntity<?> getProductByCategoryAndBrand(@PathVariable("category") String categoryName,
+                                                          @PathVariable("brand") String brandName){
         try {
             List<ProductRespone> productResponeList = productService.getProductByCategoryAndBrand(categoryName, brandName);
             return ResponseEntity.ok(ApiResponse.ok(productResponeList));
@@ -65,8 +65,15 @@ public class ProductController {
 
     @PostMapping("/filters")
     public ResponseEntity<?> getProductBySpecs(
-            @RequestBody ProductFilterDTO filter) throws Exception {
+            @RequestBody @Valid ProductFilterDTO filter, BindingResult result) throws Exception {
         try{
+            if (result.hasErrors()) {
+                List<String> errorMessages = result.getFieldErrors()
+                        .stream()
+                        .map(FieldError::getDefaultMessage)
+                        .toList();
+                return ResponseEntity.badRequest().body(ApiResponse.error(String.join(", ", errorMessages)));
+            }
             List<ProductRespone> productResponeList = productService.filterProducts(filter);
             return ResponseEntity.ok(ApiResponse.ok(productResponeList));
         } catch (Exception e) {

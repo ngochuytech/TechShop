@@ -38,7 +38,7 @@ public class ProductService implements IProductService {
     public List<ProductRespone> getProductByCategory(Long categoryId) throws Exception {
         if(!categoryRepository.existsById(categoryId))
             throw new DataNotFoundException("Category doesn't exist");
-        List<Product> productList = productRepository.findByCategory(categoryId);
+        List<Product> productList = productRepository.findByProductModel_CategoryId(categoryId);
         return productList.stream().map(product -> ProductRespone.fromProduct(product)).toList();
     }
 
@@ -56,6 +56,10 @@ public class ProductService implements IProductService {
 
     @Override
     public List<ProductRespone> filterProducts(ProductFilterDTO productFilterDTO) {
+        if (productFilterDTO.getMinPrice() != null && productFilterDTO.getMaxPrice() != null
+                && productFilterDTO.getMinPrice() > productFilterDTO.getMaxPrice()) {
+            throw new IllegalArgumentException("minPrice cannot be greater than maxPrice");
+        }
         List<Product> productList = productRepositoryCustom.findProductsByFilters(productFilterDTO);
         return productList.stream().map(product -> ProductRespone.fromProduct(product)).toList();
     }

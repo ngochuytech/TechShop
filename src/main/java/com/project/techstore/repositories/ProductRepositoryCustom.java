@@ -26,6 +26,11 @@ public class ProductRepositoryCustom {
         // Điều kiện category
         predicates.add(cb.equal(product.get("productModel").get("category").get("name"), filter.getCategory()));
 
+        // Điều kiện brand
+        if(filter.getBrand() != null && !filter.getBrand().isEmpty()){
+            predicates.add(cb.equal(product.get("productModel").get("brand").get("name"), filter.getBrand()));
+        }
+
         // Điều kiện attributes (RAM, CPU, GPU hoặc Size_screen, Resolution)
         if (filter.getAttributes() != null && !filter.getAttributes().isEmpty()) {
             for (Map.Entry<String, List<String>> entry : filter.getAttributes().entrySet()) {
@@ -42,6 +47,14 @@ public class ProductRepositoryCustom {
                     predicates.add(cb.or(valuePredicates.toArray(new Predicate[0])));
                 }
             }
+        }
+
+        // Điều kiện khoảng giá (lọc theo price)
+        if (filter.getMinPrice() != null) {
+            predicates.add(cb.greaterThanOrEqualTo(product.get("price"), filter.getMinPrice()));
+        }
+        if (filter.getMaxPrice() != null) {
+            predicates.add(cb.lessThanOrEqualTo(product.get("price"), filter.getMaxPrice()));
         }
 
         query.select(product).distinct(true).where(predicates.toArray(new Predicate[0]));
