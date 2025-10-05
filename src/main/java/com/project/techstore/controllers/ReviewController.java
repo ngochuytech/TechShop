@@ -1,6 +1,8 @@
 package com.project.techstore.controllers;
 
+import com.project.techstore.components.JwtTokenProvider;
 import com.project.techstore.dtos.ReviewDTO;
+import com.project.techstore.models.User;
 import com.project.techstore.services.IReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReviewController {
     private final IReviewService reviewService;
+
+    private final JwtTokenProvider jwtTokenProvider;
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<?> getReviewsByUser(@PathVariable("userId") String userId){
@@ -45,7 +49,8 @@ public class ReviewController {
                         .toList();
                 return ResponseEntity.badRequest().body(errorMessages);
             }
-            reviewService.createReview(reviewDTO);
+            User currentUser = jwtTokenProvider.getCurrentUser();
+            reviewService.createReview(currentUser, reviewDTO);
             return ResponseEntity.ok("Create a new review successful");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

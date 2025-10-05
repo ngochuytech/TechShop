@@ -8,13 +8,14 @@ import com.project.techstore.responses.product.ProductRespone;
 import com.project.techstore.services.product.IProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("${api.prefix}/products")
@@ -26,9 +27,22 @@ public class ProductController {
     public ResponseEntity<?> getProductByProductModel(@PathVariable("id") Long productModelId){
         try {
             List<Product> productList = productService.getProductByProductModel(productModelId);
-            return ResponseEntity.ok(productList);
+            List<ProductRespone> productResponses = productList.stream()
+                    .map(ProductRespone::fromProduct)
+                    .toList();
+            return ResponseEntity.ok(productResponses);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getProductById(@PathVariable("id") String productId){
+        try {
+            ProductRespone productRespone = productService.getProductById(productId);
+            return ResponseEntity.ok(ApiResponse.ok(productRespone));
+        } catch (Exception e){
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 
@@ -81,8 +95,10 @@ public class ProductController {
         }
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<?> createProduct(@RequestBody @Valid ProductDTO productDTO, BindingResult result){
+    @PostMapping(value = "/create", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<?> createProduct(@RequestPart @Valid ProductDTO productDTO,
+                                           @RequestPart(value = "images", required = false) List<MultipartFile> images,
+                                           BindingResult result){
         try {
             if(result.hasErrors()){
                 List<String> errorMessages = result.getFieldErrors()
@@ -91,7 +107,7 @@ public class ProductController {
                         .toList();
                 return ResponseEntity.badRequest().body(errorMessages);
             }
-            productService.createProduct(productDTO);
+            productService.createProduct(productDTO, images);
             return ResponseEntity.ok("Create a new product successful");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -123,6 +139,18 @@ public class ProductController {
             return ResponseEntity.ok("Delete a product successful");
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    @GetMapping("/{id}/similar")
+    public ResponseEntity<?> getSimilarProducts(
+            @PathVariable("id") String productId,
+            @RequestParam(defaultValue = "6") int limit) {
+        try {
+            List<ProductRespone> similarProducts = productService.getSimilarProducts(productId, limit);
+            return ResponseEntity.ok(ApiResponse.ok(similarProducts));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 }

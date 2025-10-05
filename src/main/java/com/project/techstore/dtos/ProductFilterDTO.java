@@ -1,7 +1,6 @@
 package com.project.techstore.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.annotation.Nullable;
 import lombok.Data;
 
 import java.util.List;

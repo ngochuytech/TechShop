@@ -23,10 +23,10 @@ public class ReviewService implements IReviewService{
     private final ProductRepository productRepository;
 
     @Override
-    public List<Review> getReviewByUser(String userId) throws Exception {
-        if(!userRepository.existsById(userId))
-            throw new DataNotFoundException("User doesn't exist");
-        return reviewRepository.findByUserId(userId);
+    public List<Review> getReviewByUser(String userEmail) throws Exception {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new DataNotFoundException("User doesn't exist"));
+        return reviewRepository.findByUserId(user.getId());
     }
 
     @Override
@@ -37,9 +37,7 @@ public class ReviewService implements IReviewService{
     }
 
     @Override
-    public Review createReview(ReviewDTO reviewDTO) throws Exception {
-        User user = userRepository.findById(reviewDTO.getUserId())
-                .orElseThrow(() -> new DataNotFoundException("User doesn't exist"));
+    public Review createReview(User user, ReviewDTO reviewDTO) throws Exception {
         Product product = productRepository.findById(reviewDTO.getProductId())
                 .orElseThrow(() -> new DataNotFoundException("Product doesn't exist"));
         Review review = Review.builder()

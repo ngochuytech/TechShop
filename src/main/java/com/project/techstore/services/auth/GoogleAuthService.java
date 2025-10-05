@@ -7,6 +7,10 @@ import com.project.techstore.repositories.RoleRepository;
 import com.project.techstore.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -20,6 +24,8 @@ public class GoogleAuthService {
     private final UserRepository userRepository;
 
     private final RoleRepository roleRepository;
+
+    private final AuthenticationManager authenticationManager;
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String clientId;

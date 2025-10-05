@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Map;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -17,25 +19,15 @@ public class ProductDTO {
     @Size(max = 500, message = "The maximum length of the name is 500 characters")
     private String name;
 
-    @JsonProperty("image")
-    private String image;
+    @JsonProperty("configuration_summary")
+    @NotBlank(message = "Configuration summary is required")
+    private String configurationSummary;
 
-    @JsonProperty("price")
-    @NotNull(message = "Price is required")
-    @PositiveOrZero(message = "Price must be a positive number")
-    private Long price;
-
-    @JsonProperty("price_discount")
-    @PositiveOrZero(message = "Price discount must be a positive number")
-    private Long priceDiscount;
-
-    @JsonProperty("stock")
-    @PositiveOrZero(message = "Stock must be a positive number")
-    private Integer stock;
-
-    @JsonProperty("spec")
-    private String spec;
+    @JsonProperty("attributes")
+    private Map<String, String> attributes;
 
     @JsonProperty("product_model_id")
     private Long productModelId;
+
+    private String description;
 }

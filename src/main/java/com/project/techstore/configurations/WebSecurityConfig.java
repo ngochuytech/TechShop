@@ -46,7 +46,7 @@ public class WebSecurityConfig  {
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, String.format("%s/products/**", apiPrefix)).permitAll()
                         .requestMatchers(HttpMethod.POST,apiPrefix + "/products/filters").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 );
         return http.build();
     }

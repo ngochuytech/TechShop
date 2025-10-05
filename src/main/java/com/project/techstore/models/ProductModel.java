@@ -1,5 +1,7 @@
 package com.project.techstore.models;
 
+import java.util.List;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,4 +30,7 @@ public class ProductModel extends BaseEntity{
     @ManyToOne
     @JoinColumn(name = "brand_id")
     private Brand brand;
+
+    @OneToMany(mappedBy = "productModel", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Product> products;
 }

@@ -20,22 +20,22 @@ public class Product extends BaseEntity{
     @Column(name = "name", length = 500, nullable = false)
     private String name;
 
-    @Column(name = "image")
-    private String image;
+    @Column(name = "configuration_summary")
+    private String configurationSummary;
 
-    @Column(name = "price", nullable = false)
-    private Long price;
-
-    @Column(name = "price_discount")
-    private Long priceDiscount;
-
-    @Column(name = "stock")
-    private Integer stock;
+    private String description;
 
     @ManyToOne
     @JoinColumn(name = "product_model_id")
     private ProductModel productModel;
 
     @OneToMany(mappedBy = "product")
+    private List<ProductVariant> variants;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductAttribute> productAttributes;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Media> mediaList;
+
 }

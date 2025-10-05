@@ -17,6 +17,8 @@ public class Attribute {
 
     private String name;
 
+    private String description;
+
     private String type;
 
     private String unit;

@@ -1,7 +1,6 @@
 package com.project.techstore.controllers;
 
 import com.project.techstore.dtos.CreateOrderRequest;
-import com.project.techstore.dtos.OrderDTO;
 import com.project.techstore.services.IOrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

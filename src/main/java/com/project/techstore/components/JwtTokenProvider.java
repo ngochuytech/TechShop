@@ -10,6 +10,7 @@ import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -103,5 +104,53 @@ public class JwtTokenProvider {
     public boolean isTokenExpired(String token) {
         Date expirationDate = this.extractClaim(token, Claims::getExpiration);
         return expirationDate.before(new Date());
+    }
+
+    
+    public String getEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getPrincipal() == null) {
+            throw new RuntimeException("Không tìm thấy thông tin người dùng");
+        }
+        
+        Object principal = authentication.getPrincipal();
+        
+        // Kiểm tra nếu là anonymous user
+        if (principal instanceof String && "anonymousUser".equals(principal)) {
+            throw new RuntimeException("User chưa được xác thực (anonymous user)");
+        }
+        
+        if (principal instanceof User) {
+            return ((User) principal).getEmail();
+        } else if (principal instanceof String) {
+            return (String) principal;
+        } else {
+            return authentication.getName();
+        }
+    }
+
+    public User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getPrincipal() == null) {
+            throw new RuntimeException("Không tìm thấy thông tin người dùng");
+        }
+        
+        Object principal = authentication.getPrincipal();
+        
+        // Kiểm tra nếu là anonymous user
+        if (principal instanceof String && "anonymousUser".equals(principal)) {
+            throw new RuntimeException("User chưa được xác thực (anonymous user)");
+        }
+        
+        if (principal instanceof User) {
+            return (User) principal;
+        } else {
+            throw new RuntimeException("Principal không phải là User object. Principal type: " + 
+                principal.getClass().getName() + ", value: " + principal);
+        }
+    }
+
+    public String getCurrentUserId() {
+        return getCurrentUser().getId();
     }
 }

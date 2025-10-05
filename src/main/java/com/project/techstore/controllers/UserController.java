@@ -16,7 +16,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
@@ -141,6 +143,11 @@ public class UserController {
     public ResponseEntity<?> callback(@RequestBody GoogleCodeRequest request){
         try {
             User user = googleAuthService.loginWithGoogle(request);
+            
+            UsernamePasswordAuthenticationToken authentication = 
+                new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            
             String token = jwtTokenProvider.generateToken(user);
             Token jwtToken = tokenService.addToken(user, token);
 
