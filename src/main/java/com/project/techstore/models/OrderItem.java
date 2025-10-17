@@ -34,6 +34,10 @@ public class OrderItem {
     @JoinColumn(name = "product_id")
     private Product product;
 
+    @ManyToOne
+    @JoinColumn(name = "product_variant_id")
+    private ProductVariant productVariant;
+
     @PrePersist
     public void onCreate(){
         this.createdAt = LocalDateTime.now();

@@ -2,7 +2,7 @@ package com.project.techstore.controllers;
 
 import com.project.techstore.dtos.AddressDTO;
 import com.project.techstore.models.Address;
-import com.project.techstore.services.IAddressSerivce;
+import com.project.techstore.services.address.IAddressService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +16,7 @@ import java.util.List;
 @RequestMapping("${api.prefix}/address")
 @RequiredArgsConstructor
 public class AddressController {
-    private final IAddressSerivce addressService;
+    private final IAddressService addressService;
 
     @PostMapping("/create-address")
     public ResponseEntity<?> createAddress(@RequestBody @Valid AddressDTO addressDTO, BindingResult result){

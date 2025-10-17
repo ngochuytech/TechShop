@@ -1,6 +1,6 @@
 package com.project.techstore.controllers;
 
-import com.project.techstore.dtos.ProductVariantDTO;
+import com.project.techstore.dtos.product.ProductVariantDTO;
 import com.project.techstore.models.ProductVariant;
 import com.project.techstore.responses.ApiResponse;
 import com.project.techstore.services.product.IProductVariantService;
@@ -37,8 +37,8 @@ public class ProductVariantController {
                 return ResponseEntity.badRequest().body(ApiResponse.error(errorMessages.toString()));
             }
             
-            ProductVariant variant = productVariantService.createVariant(productVariantDTO, image);
-            return ResponseEntity.ok(ApiResponse.ok(variant));
+            productVariantService.createVariant(productVariantDTO, image);
+            return ResponseEntity.ok(ApiResponse.ok("Tạo mới mẫu màu sản phẩm thành công"));
             
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

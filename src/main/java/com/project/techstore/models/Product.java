@@ -23,6 +23,10 @@ public class Product extends BaseEntity{
     @Column(name = "configuration_summary")
     private String configurationSummary;
 
+    private Long price;
+
+    private Integer stock;
+
     private String description;
 
     @ManyToOne

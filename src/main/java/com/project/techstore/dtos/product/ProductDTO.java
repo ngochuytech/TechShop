@@ -1,4 +1,4 @@
-package com.project.techstore.dtos;
+package com.project.techstore.dtos.product;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
@@ -29,5 +29,12 @@ public class ProductDTO {
     @JsonProperty("product_model_id")
     private Long productModelId;
 
+    @NotBlank(message = "Description is required")
     private String description;
+
+    @JsonProperty("price")
+    private Long price;
+
+    @JsonProperty("stock")
+    private Integer stock;
 }

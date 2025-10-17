@@ -1,7 +1,7 @@
 package com.project.techstore.controllers;
 
-import com.project.techstore.dtos.ProductDTO;
-import com.project.techstore.dtos.ProductFilterDTO;
+import com.project.techstore.dtos.product.ProductDTO;
+import com.project.techstore.dtos.product.ProductFilterDTO;
 import com.project.techstore.models.Product;
 import com.project.techstore.responses.ApiResponse;
 import com.project.techstore.responses.product.ProductRespone;
@@ -22,6 +22,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductController {
     private final IProductService productService;
+
+    @GetMapping("")
+    public ResponseEntity<?> getAllProducts() {
+        try {
+            List<Product> productList = productService.getAllProducts();
+            List<ProductRespone> productResponse = productList.stream()
+                    .map(ProductRespone::fromProduct).toList();
+            return ResponseEntity.ok(ApiResponse.ok(productResponse));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
     @GetMapping("/product-model/{id}")
     public ResponseEntity<?> getProductByProductModel(@PathVariable("id") Long productModelId){
@@ -97,16 +109,8 @@ public class ProductController {
 
     @PostMapping(value = "/create", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<?> createProduct(@RequestPart @Valid ProductDTO productDTO,
-                                           @RequestPart(value = "images", required = false) List<MultipartFile> images,
-                                           BindingResult result){
+                                           @RequestPart(value = "images", required = false) List<MultipartFile> images){
         try {
-            if(result.hasErrors()){
-                List<String> errorMessages = result.getFieldErrors()
-                        .stream()
-                        .map(FieldError::getDefaultMessage)
-                        .toList();
-                return ResponseEntity.badRequest().body(errorMessages);
-            }
             productService.createProduct(productDTO, images);
             return ResponseEntity.ok("Create a new product successful");
         } catch (Exception e) {

@@ -1,6 +1,6 @@
 package com.project.techstore.services.product;
 
-import com.project.techstore.dtos.ProductVariantDTO;
+import com.project.techstore.dtos.product.ProductVariantDTO;
 import com.project.techstore.models.ProductVariant;
 import org.springframework.web.multipart.MultipartFile;
 

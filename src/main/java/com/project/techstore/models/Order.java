@@ -1,5 +1,7 @@
 package com.project.techstore.models;
 
+import java.util.List;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,17 +17,16 @@ public class Order extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(name = "total_price", nullable = false)
+    @Column(nullable = false)
     private Long totalPrice;
 
-    @Column(name = "discount_price", nullable = false)
-    private Long discountPrice;
-
-    @Column(name = "payment_method", length = 50, nullable = false)
+    @Column(length = 50, nullable = false)
     private String paymentMethod;
 
-    @Column(name = "status", length = 50, nullable = false)
+    @Column(length = 50, nullable = false)
     private String status;
+
+    private String note;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -38,4 +39,7 @@ public class Order extends BaseEntity{
     @ManyToOne
     @JoinColumn(name = "address_id")
     private Address address;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    private List<OrderItem> orderItems;
 }

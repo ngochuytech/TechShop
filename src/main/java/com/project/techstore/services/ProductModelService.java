@@ -1,11 +1,10 @@
 package com.project.techstore.services;
 
-import com.project.techstore.dtos.ProductModelDTO;
+import com.project.techstore.dtos.product.ProductModelDTO;
 import com.project.techstore.exceptions.DataNotFoundException;
 import com.project.techstore.models.Brand;
 import com.project.techstore.models.Category;
 import com.project.techstore.models.ProductModel;
-import com.project.techstore.models.Role;
 import com.project.techstore.repositories.BrandRepository;
 import com.project.techstore.repositories.CategoryRepository;
 import com.project.techstore.repositories.ProductModelRepository;
@@ -20,6 +19,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductModelService implements IProductModelService{
     private final ProductModelRepository productModelRepository;
+        @Override
+        public List<ProductModel> getAllProductModels() {
+                return productModelRepository.findAll();
+        }
 
     private final CategoryRepository categoryRepository;
 

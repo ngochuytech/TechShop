@@ -18,6 +18,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class TokenService implements ITokenService{
+
     private final TokenRepository tokenRepository;
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -71,5 +72,15 @@ public class TokenService implements ITokenService{
         existingToken.setRefreshExpirationDate(LocalDateTime.now().plusSeconds(expirationRefreshToken));
         return existingToken;
 
+    }
+
+    @Override
+    public Token findByRefreshToken(String refreshToken) {
+        return tokenRepository.findByRefreshToken(refreshToken);
+    }
+
+    @Override
+    public Token save(Token token) {
+        return tokenRepository.save(token);
     }
 }

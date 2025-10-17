@@ -1,5 +1,7 @@
 package com.project.techstore.dtos;
 
+import com.project.techstore.dtos.order.OrderDTO;
+
 import jakarta.validation.Valid;
 import lombok.Getter;
 

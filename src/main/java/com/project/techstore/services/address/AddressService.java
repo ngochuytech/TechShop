@@ -1,4 +1,4 @@
-package com.project.techstore.services;
+package com.project.techstore.services.address;
 
 import com.project.techstore.dtos.AddressDTO;
 import com.project.techstore.exceptions.DataNotFoundException;
@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class AddressService implements IAddressSerivce{
+public class AddressService implements IAddressService{
     private final AddressRepository addressRepository;
 
 
@@ -17,7 +17,6 @@ public class AddressService implements IAddressSerivce{
     public Address createAddress(AddressDTO addressDTO) throws Exception {
         Address address = Address.builder()
                 .province(addressDTO.getProvince())
-                .district(addressDTO.getDistrict())
                 .ward(addressDTO.getWard())
                 .homeAddress(addressDTO.getHomeAddress())
                 .suggestedName(addressDTO.getSuggestedName())
@@ -30,7 +29,6 @@ public class AddressService implements IAddressSerivce{
         Address address = addressRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Address not found"));
         address.setProvince(addressDTO.getProvince());
-        address.setDistrict(addressDTO.getDistrict());
         address.setWard(addressDTO.getWard());
         address.setHomeAddress(addressDTO.getHomeAddress());
         address.setSuggestedName(addressDTO.getSuggestedName());

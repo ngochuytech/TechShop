@@ -1,6 +1,6 @@
 package com.project.techstore.repositories;
 
-import com.project.techstore.dtos.ProductFilterDTO;
+import com.project.techstore.dtos.product.ProductFilterDTO;
 import com.project.techstore.models.Product;
 import com.project.techstore.models.ProductAttribute;
 import jakarta.persistence.EntityManager;

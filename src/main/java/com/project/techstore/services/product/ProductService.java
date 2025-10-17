@@ -1,29 +1,30 @@
 package com.project.techstore.services.product;
 
-import com.project.techstore.dtos.ProductDTO;
-import com.project.techstore.dtos.ProductFilterDTO;
+import com.project.techstore.dtos.product.ProductDTO;
+import com.project.techstore.dtos.product.ProductFilterDTO;
 import com.project.techstore.exceptions.DataNotFoundException;
 import com.project.techstore.models.*;
 import com.project.techstore.repositories.*;
 import com.project.techstore.responses.product.ProductRespone;
+import com.project.techstore.services.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ProductService implements IProductService {
     private final ProductRepository productRepository;
+    @Override
+    public List<Product> getAllProducts() {
+        return productRepository.findAll();
+    }
 
     private final ProductRepositoryCustom productRepositoryCustom;
 
@@ -36,6 +37,10 @@ public class ProductService implements IProductService {
     private final AttributeRepository attributeRepository;
 
     private final ProductAttributeRepository productAttributeRepository;
+
+    private final ProductVariantRepository productVariantRepository;
+    
+    private final CloudinaryService cloudinaryService;
 
     @Override
     public List<Product> getProductByProductModel(Long productModelId) throws Exception{
@@ -94,6 +99,8 @@ public class ProductService implements IProductService {
                 .name(productDTO.getName())
                 .configurationSummary(productDTO.getConfigurationSummary())
                 .description(productDTO.getDescription())
+                .price(productDTO.getPrice())
+                .stock(productDTO.getStock())
                 .productModel(productModel)
                 .mediaList(new ArrayList<>())
                 .build();
@@ -101,18 +108,14 @@ public class ProductService implements IProductService {
 
         // Xử lý upload images nếu có
         if (images != null && !images.isEmpty()) {
-            String uploadDir = "uploads/products/" + product.getId();
-            Files.createDirectories(Path.of(uploadDir));
-
             for (int i = 0; i < images.size(); i++) {
                 MultipartFile file = images.get(i);
                 if (!file.isEmpty()) {
-                    String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-                    Path filePath = Paths.get(uploadDir, fileName);
-                    Files.copy(file.getInputStream(), filePath);
+                    // Upload lên Cloudinary
+                    String imageUrl = cloudinaryService.uploadProductImage(file, product.getId());
 
                     Media media = new Media();
-                    media.setMediaPath("/" + uploadDir + "/" + fileName);
+                    media.setMediaPath(imageUrl);
                     media.setMediaType(file.getContentType());
                     media.setIsPrimary(i == 0);
                     media.setProduct(product);
@@ -164,29 +167,20 @@ public class ProductService implements IProductService {
     @Override
     public void deleteProduct(String id) throws Exception {
         // Kiểm tra sản phẩm có tồn tại không
-        if (!productRepository.existsById(id)) {
-            throw new DataNotFoundException("This product doesn't exist");
-        }
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException("This product doesn't exist"));
 
-        // Xóa thư mục ảnh trong hệ thống file
-        String uploadDir = "uploads/products/" + id;
-        Path uploadDirPath = Paths.get(uploadDir);
-        try {
-            if (Files.exists(uploadDirPath)) {
-                Files.walk(uploadDirPath)
-                        .sorted((a, b) -> b.compareTo(a)) // Xóa file trước, thư mục sau
-                        .forEach(path -> {
-                            try {
-                                Files.delete(path);
-                            } catch (IOException e) {
-                                // Log lỗi nhưng không throw để tiếp tục xóa database
-                                System.err.println("Failed to delete file/folder: " + path + ", error: " + e.getMessage());
-                            }
-                        });
+        // Xóa ảnh từ Cloudinary
+        List<Media> mediaList = product.getMediaList();
+        if (mediaList != null && !mediaList.isEmpty()) {
+            for (Media media : mediaList) {
+                try {
+                    cloudinaryService.deleteImageByUrl(media.getMediaPath());
+                } catch (IOException e) {
+                    // Log lỗi nhưng không làm gián đoạn xóa database
+                    System.err.println("Failed to delete image from Cloudinary: " + media.getMediaPath() + ", error: " + e.getMessage());
+                }
             }
-        } catch (IOException e) {
-            // Log lỗi nhưng không làm gián đoạn xóa database
-            System.err.println("Failed to delete product images directory: " + uploadDir + ", error: " + e.getMessage());
         }
 
         productRepository.deleteById(id);
@@ -216,5 +210,41 @@ public class ProductService implements IProductService {
                 .limit(limit)
                 .map(product -> ProductRespone.fromProduct(product))
                 .toList();
+    }
+    
+    /**
+     * Cập nhật price và stock của Product dựa trên các ProductVariant
+     * - Price = giá thấp nhất của các variant
+     * - Stock = tổng stock của các variant
+     */
+    @Transactional
+    public void updateProductPriceAndStockFromVariants(String productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
+        
+        List<ProductVariant> variants = productVariantRepository.findByProductId(productId);
+        
+        if (variants.isEmpty()) {
+            // Nếu không có variant nào, giữ nguyên price và stock hiện tại
+            return;
+        }
+        
+        // Tính price = giá thấp nhất của các variant (chỉ tính variant có price khác null)
+        Long minPrice = variants.stream()
+                .filter(variant -> variant.getPrice() != null)
+                .mapToLong(ProductVariant::getPrice)
+                .min()
+                .orElse(product.getPrice() != null ? product.getPrice() : 0L);
+        
+        // Tính stock = tổng stock của các variant
+        Integer totalStock = variants.stream()
+                .filter(variant -> variant.getStock() != null)
+                .mapToInt(ProductVariant::getStock)
+                .sum();
+        
+        // Cập nhật product
+        product.setPrice(minPrice);
+        product.setStock(totalStock);
+        productRepository.save(product);
     }
 }

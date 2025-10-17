@@ -29,8 +29,5 @@ public class ProductVariant {
 
     private Long price;
 
-    @Column(name = "price_discount")
-    private Long priceDiscount;
-
     private String image;
 }

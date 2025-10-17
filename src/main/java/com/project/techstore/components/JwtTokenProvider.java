@@ -1,9 +1,13 @@
 package com.project.techstore.components;
 
+import com.project.techstore.exceptions.ExpiredTokenException;
+import com.project.techstore.exceptions.InvalidParamException;
 import com.project.techstore.models.Token;
 import com.project.techstore.models.User;
 import com.project.techstore.repositories.TokenRepository;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -65,34 +69,60 @@ public class JwtTokenProvider {
     }
 
     // get username from JWT token
-    public String getUsername(String token){
-
-        return Jwts.parser()
-                .verifyWith((SecretKey) key())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
+    public String getUsername(String token) {
+        try {
+            return Jwts.parser()
+                    .verifyWith((SecretKey) key())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .getSubject();
+        } catch (ExpiredJwtException e) {
+            throw new ExpiredTokenException("Token đã hết hạn");
+        } catch (JwtException e) {
+            throw new InvalidParamException("Token không hợp lệ: " + e.getMessage());
+        }
     }
 
     // validate JWT token
-    public boolean validateToken(String token, User user){
-        String subject = extractClaim(token, Claims::getSubject);
-        // Subject là email
+    public boolean validateToken(String token, User user) {
+        try {
+            String subject = extractClaim(token, Claims::getSubject);
+            // Subject là email
 
-        // Kiểm tra token tồn tại trong DB ko ?
-        Token existingToken = tokenRepository.findByToken(token);
-        if(existingToken == null || existingToken.isRevoked() ||!user.getIsActive()) {
-            return false;
+            // Kiểm tra token tồn tại trong DB ko ?
+            Token existingToken = tokenRepository.findByToken(token);
+            if(existingToken == null) {
+                throw new InvalidParamException("Token không tồn tại trong hệ thống");
+            }
+            if(existingToken.isRevoked()) {
+                throw new InvalidParamException("Token đã bị thu hồi");
+            }
+            if(!user.getIsActive()) {
+                throw new InvalidParamException("Tài khoản đã bị vô hiệu hóa");
+            }
+            if(isTokenExpired(token)) {
+                throw new ExpiredTokenException("Token đã hết hạn");
+            }
+            return subject.equals(user.getUsername());
+        } catch (ExpiredJwtException e) {
+            throw new ExpiredTokenException("Token đã hết hạn");
+        } catch (JwtException e) {
+            throw new InvalidParamException("Token không hợp lệ: " + e.getMessage());
         }
-        return (subject.equals(user.getUsername())) && !isTokenExpired(token);
     }
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()  // Khởi tạo JwtParserBuilder
-                .verifyWith(key())  // Sử dụng verifyWith() để thiết lập signing key
-                .build()  // Xây dựng JwtParser
-                .parseSignedClaims(token)  // Phân tích token đã ký
-                .getPayload();  // Lấy phần body của JWT, chứa claims
+        try {
+            return Jwts.parser()  // Khởi tạo JwtParserBuilder
+                    .verifyWith(key())  // Sử dụng verifyWith() để thiết lập signing key
+                    .build()  // Xây dựng JwtParser
+                    .parseSignedClaims(token)  // Phân tích token đã ký
+                    .getPayload();  // Lấy phần body của JWT, chứa claims
+        } catch (ExpiredJwtException e) {
+            throw new ExpiredTokenException("Token đã hết hạn");
+        } catch (JwtException e) {
+            throw new InvalidParamException("Token không hợp lệ: " + e.getMessage());
+        }
     }
 
 
@@ -102,8 +132,12 @@ public class JwtTokenProvider {
     }
 
     public boolean isTokenExpired(String token) {
-        Date expirationDate = this.extractClaim(token, Claims::getExpiration);
-        return expirationDate.before(new Date());
+        try {
+            Date expirationDate = this.extractClaim(token, Claims::getExpiration);
+            return expirationDate.before(new Date());
+        } catch (ExpiredJwtException e) {
+            return true; // Token đã hết hạn
+        }
     }
 
     

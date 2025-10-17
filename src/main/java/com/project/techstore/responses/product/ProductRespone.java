@@ -19,7 +19,13 @@ public class ProductRespone {
 
     private String name;
 
+    private Long price;
+
+    private Integer stock;
+
     private List<String> images;
+
+    private String imagePrimary;
 
     private String status;
 
@@ -41,6 +47,11 @@ public class ProductRespone {
         List<String> images = product.getMediaList().stream()
                 .map(Media::getMediaPath)
                 .toList();
+        String imagePrimary = product.getMediaList().stream()
+                .filter(img -> img.getIsPrimary() == true)
+                .findFirst()
+                .map(Media::getMediaPath)
+                .orElse(null);
 
         // Sử dụng ProductVariant để lấy các màu sắc
         List<VariantResponse> colorResponses = product.getVariants() != null ? 
@@ -52,14 +63,17 @@ public class ProductRespone {
         Map<String, String> attributes = new HashMap<>();
         product.getProductAttributes().forEach(pa -> {
             if (pa.getAttribute() != null) {
-                attributes.put(pa.getAttribute().getDescription(), pa.getValue());
+                attributes.put(pa.getAttribute().getName(), pa.getValue());
             }
         });
 
         return ProductRespone.builder()
                 .id(product.getId())
                 .name(product.getName())
+                .price(product.getPrice())
+                .stock(product.getStock())
                 .images(images)
+                .imagePrimary(imagePrimary)
                 .configurationSummary(product.getConfigurationSummary())
                 .description(product.getDescription())
                 .colors(colorResponses)

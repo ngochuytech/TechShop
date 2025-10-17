@@ -1,4 +1,4 @@
-package com.project.techstore.dtos;
+package com.project.techstore.dtos.product;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Min;
@@ -26,6 +26,6 @@ public class ProductVariantDTO {
     private Integer stock;
     
     @Min(value = 0, message = "Price must be greater than or equal to 0")
-    private Long price; // Có thể null, sẽ sử dụng giá từ Product
+    private Long price;
     
 }

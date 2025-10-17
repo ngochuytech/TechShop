@@ -1,8 +1,10 @@
 package com.project.techstore.controllers;
 
 
-import com.project.techstore.dtos.ProductModelDTO;
+import com.project.techstore.dtos.product.ProductModelDTO;
 import com.project.techstore.models.ProductModel;
+import com.project.techstore.responses.ApiResponse;
+import com.project.techstore.responses.product.ProductModelResponse;
 import com.project.techstore.services.IProductModelService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +22,27 @@ public class ProductModelController {
 
     private final IProductModelService productModelService;
 
+    @GetMapping("")
+    public ResponseEntity<?> getAllProductModels() {
+        try {
+            List<ProductModel> productModels = productModelService.getAllProductModels();
+            List<ProductModelResponse> responses = productModels.stream()
+                    .map(ProductModelResponse::fromProductModel)
+                    .toList();
+            return ResponseEntity.ok(ApiResponse.ok(responses));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping("/category/{id}")
     public ResponseEntity<?> getProductModelByCategory(@PathVariable("id") Long categoryId){
         try {
             List<ProductModel> productModelList = productModelService.getProductModelByCategory(categoryId);
-            return ResponseEntity.ok(productModelList);
+            List<ProductModelResponse> responses = productModelList.stream()
+                    .map(ProductModelResponse::fromProductModel)
+                    .toList();
+            return ResponseEntity.ok(ApiResponse.ok(responses));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -34,7 +52,10 @@ public class ProductModelController {
     public ResponseEntity<?> getProductModelByBrand(@PathVariable("id") Long brandId){
         try {
             List<ProductModel> productModelList = productModelService.getProductModelByBrand(brandId);
-            return ResponseEntity.ok(productModelList);
+            List<ProductModelResponse> responses = productModelList.stream()
+                    .map(ProductModelResponse::fromProductModel)
+                    .toList();
+            return ResponseEntity.ok(ApiResponse.ok(responses));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -50,7 +71,7 @@ public class ProductModelController {
                         .toList();
                 return ResponseEntity.badRequest().body(errorMessages);
             }
-            ProductModel productModel = productModelService.createProductModel(productModelDTO);
+            productModelService.createProductModel(productModelDTO);
             return ResponseEntity.ok("Create a new product model successful");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -68,7 +89,7 @@ public class ProductModelController {
                         .toList();
                 return ResponseEntity.badRequest().body(errorMessages);
             }
-            ProductModel productModel = productModelService.updateProductModel(id, productModelDTO);
+            productModelService.updateProductModel(id, productModelDTO);
             return ResponseEntity.ok("Update a product model successful");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

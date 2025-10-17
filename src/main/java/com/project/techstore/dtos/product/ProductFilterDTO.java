@@ -1,4 +1,4 @@
-package com.project.techstore.dtos;
+package com.project.techstore.dtos.product;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

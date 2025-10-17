@@ -1,4 +1,4 @@
-package com.project.techstore.dtos;
+package com.project.techstore.dtos.user;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.annotation.Nullable;
@@ -40,7 +40,6 @@ public class UserDTO {
     @Size(min = 10, max = 10, message = "The phone number must be exactly 10 digits")
     private String phone;
 
-    @JsonProperty("date_of_birth")
     private LocalDate dateOfBirth;
 
     @JsonProperty("avatar")

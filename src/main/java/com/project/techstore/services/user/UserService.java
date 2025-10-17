@@ -2,8 +2,9 @@ package com.project.techstore.services.user;
 
 import com.project.techstore.components.JwtTokenProvider;
 import com.project.techstore.dtos.AddressDTO;
-import com.project.techstore.dtos.UserDTO;
 import com.project.techstore.dtos.UserLoginDTO;
+import com.project.techstore.dtos.user.UpdateProfileDTO;
+import com.project.techstore.dtos.user.UserDTO;
 import com.project.techstore.exceptions.DataNotFoundException;
 import com.project.techstore.exceptions.ExpiredTokenException;
 import com.project.techstore.exceptions.InvalidParamException;
@@ -123,7 +124,6 @@ public class UserService implements IUserService {
         if(user.getAddress() == null){
             Address address = Address.builder()
                     .province(addressDTO.getProvince())
-                    .district(addressDTO.getDistrict())
                     .ward(addressDTO.getWard())
                     .homeAddress(addressDTO.getHomeAddress())
                     .suggestedName(addressDTO.getSuggestedName())
@@ -134,7 +134,6 @@ public class UserService implements IUserService {
             Address address = addressRepository.findById(user.getAddress().getId())
                     .orElseThrow(() -> new DataNotFoundException("Can't found address of this user"));
             address.setProvince(addressDTO.getProvince());
-            address.setDistrict(addressDTO.getDistrict());
             address.setWard(addressDTO.getWard());
             address.setHomeAddress(addressDTO.getHomeAddress());
             address.setSuggestedName(addressDTO.getSuggestedName());
@@ -180,6 +179,22 @@ public class UserService implements IUserService {
                 .orElseThrow(() -> new DataNotFoundException("User doesn't exist"));
         user.setIsActive(isActive);
         return userRepository.save(user);
+    }
+
+    @Override
+    public User getUserById(String id) throws Exception {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException("User doesn't exist"));
+    }
+
+    @Override
+    public void updateProfile(String userId, UpdateProfileDTO profileDTO) throws Exception {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new DataNotFoundException("User doesn't exist"));
+        user.setFullName(profileDTO.getFullName());
+        user.setDateOfBirth(profileDTO.getDateOfBirth());
+        user.setPhone(profileDTO.getPhone());
+        userRepository.save(user);
     }
 
 }

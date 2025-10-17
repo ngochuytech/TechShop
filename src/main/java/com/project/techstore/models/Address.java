@@ -18,9 +18,6 @@ public class Address {
     @Column(name = "province", length = 255, nullable = false)
     private String province;
 
-    @Column(name = "district", length = 255, nullable = false)
-    private String district;
-
     @Column(name = "ward", length = 255, nullable = false)
     private String ward;
 

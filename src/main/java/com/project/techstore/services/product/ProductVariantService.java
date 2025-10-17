@@ -1,21 +1,18 @@
 package com.project.techstore.services.product;
 
-import com.project.techstore.dtos.ProductVariantDTO;
+import com.project.techstore.dtos.product.ProductVariantDTO;
 import com.project.techstore.exceptions.DataNotFoundException;
 import com.project.techstore.models.Product;
 import com.project.techstore.models.ProductVariant;
 import com.project.techstore.repositories.ProductRepository;
 import com.project.techstore.repositories.ProductVariantRepository;
+import com.project.techstore.services.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +20,7 @@ public class ProductVariantService implements IProductVariantService {
     
     private final ProductVariantRepository productVariantRepository;
     private final ProductRepository productRepository;
+    private final CloudinaryService cloudinaryService;
     
     @Override
     @Transactional
@@ -54,18 +52,16 @@ public class ProductVariantService implements IProductVariantService {
         
         // Xử lý upload ảnh nếu có
         if (image != null && !image.isEmpty()) {
-            String uploadDir = "uploads/variants/" + variant.getId();
-            Files.createDirectories(Path.of(uploadDir));
-            
-            // Generate unique filename
-            String fileName = UUID.randomUUID().toString() + "_" + image.getOriginalFilename();
-            Path filePath = Paths.get(uploadDir, fileName);
-            Files.copy(image.getInputStream(), filePath);
+            // Upload lên Cloudinary
+            String imageUrl = cloudinaryService.uploadVariantImage(image, variant.getId());
             
             // Cập nhật đường dẫn ảnh
-            variant.setImage("/" + uploadDir + "/" + fileName);
+            variant.setImage(imageUrl);
             variant = productVariantRepository.save(variant);
         }
+        
+        // Cập nhật price và stock của Product parent dựa trên variants
+        updateProductPriceAndStockFromVariants(productVariantDTO.getProductId());
         
         return variant;
     }
@@ -81,16 +77,36 @@ public class ProductVariantService implements IProductVariantService {
         existingVariant.setStock(productVariantDTO.getStock());
         existingVariant.setPrice(productVariantDTO.getPrice());
         
-        return productVariantRepository.save(existingVariant);
+        ProductVariant updatedVariant = productVariantRepository.save(existingVariant);
+        
+        // Cập nhật price và stock của Product parent dựa trên variants
+        updateProductPriceAndStockFromVariants(existingVariant.getProduct().getId());
+        
+        return updatedVariant;
     }
     
     @Override
     @Transactional
     public void deleteVariant(String variantId) throws Exception {
-        if (!productVariantRepository.existsById(variantId)) {
-            throw new DataNotFoundException("Product variant not found with ID: " + variantId);
+        ProductVariant variant = productVariantRepository.findById(variantId)
+                .orElseThrow(() -> new DataNotFoundException("Product variant not found with ID: " + variantId));
+        
+        String productId = variant.getProduct().getId();
+        
+        // Xóa ảnh từ Cloudinary nếu có
+        if (variant.getImage() != null && !variant.getImage().isEmpty()) {
+            try {
+                cloudinaryService.deleteImageByUrl(variant.getImage());
+            } catch (Exception e) {
+                // Log lỗi nhưng không làm gián đoạn xóa database
+                System.err.println("Failed to delete variant image from Cloudinary: " + variant.getImage() + ", error: " + e.getMessage());
+            }
         }
+        
         productVariantRepository.deleteById(variantId);
+        
+        // Cập nhật price và stock của Product parent dựa trên variants còn lại
+        updateProductPriceAndStockFromVariants(productId);
     }
     
     @Override
@@ -105,5 +121,38 @@ public class ProductVariantService implements IProductVariantService {
     public ProductVariant getVariantById(String variantId) throws Exception {
         return productVariantRepository.findById(variantId)
                 .orElseThrow(() -> new DataNotFoundException("Product variant not found with ID: " + variantId));
+    }
+    
+    /**
+     * Cập nhật price và stock của Product dựa trên các ProductVariant
+     */
+    @Transactional
+    public void updateProductPriceAndStockFromVariants(String productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
+        
+        List<ProductVariant> variants = productVariantRepository.findByProductId(productId);
+        
+        if (variants.isEmpty()) {
+            // Nếu không có variant nào, giữ nguyên price và stock hiện tại
+            return;
+        }
+        
+        // Tính price = giá thấp nhất của các variant (chỉ tính variant có price khác null)
+        Long minPrice = variants.stream()
+                .filter(variant -> variant.getPrice() != null)
+                .mapToLong(ProductVariant::getPrice)
+                .min()
+                .orElse(product.getPrice() != null ? product.getPrice() : 0L);
+        
+        // Tính stock = tổng stock của các variant
+        Integer totalStock = variants.stream()
+                .filter(variant -> variant.getStock() != null)
+                .mapToInt(ProductVariant::getStock)
+                .sum();
+        
+        product.setPrice(minPrice);
+        product.setStock(totalStock);
+        productRepository.save(product);
     }
 }

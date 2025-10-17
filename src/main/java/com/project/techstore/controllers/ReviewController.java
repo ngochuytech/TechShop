@@ -2,11 +2,14 @@ package com.project.techstore.controllers;
 
 import com.project.techstore.components.JwtTokenProvider;
 import com.project.techstore.dtos.ReviewDTO;
+import com.project.techstore.models.Review;
 import com.project.techstore.models.User;
+import com.project.techstore.responses.review.ReviewResponse;
 import com.project.techstore.services.IReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
@@ -33,14 +36,21 @@ public class ReviewController {
     @GetMapping("/product/{productId}")
     public ResponseEntity<?> getReviewsByProduct(@PathVariable("productId") String productId){
         try {
-            return ResponseEntity.ok(reviewService.getReviewByProduct(productId));
+            List<Review> reviews = reviewService.getReviewByProduct(productId);
+            List<ReviewResponse> reviewResponses = reviews.stream()
+                    .map(ReviewResponse::fromReview)
+                    .toList();
+
+            return ResponseEntity.ok(reviewResponses);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     @PostMapping("/create")
-    public ResponseEntity<?> createReview(@RequestBody @Valid ReviewDTO reviewDTO, BindingResult result){
+    public ResponseEntity<?> createReview(@RequestBody @Valid ReviewDTO reviewDTO,
+        @AuthenticationPrincipal User user
+        , BindingResult result){
         try {
             if(result.hasErrors()){
                 List<String> errorMessages = result.getFieldErrors()
@@ -49,8 +59,7 @@ public class ReviewController {
                         .toList();
                 return ResponseEntity.badRequest().body(errorMessages);
             }
-            User currentUser = jwtTokenProvider.getCurrentUser();
-            reviewService.createReview(currentUser, reviewDTO);
+            reviewService.createReview(user, reviewDTO);
             return ResponseEntity.ok("Create a new review successful");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
