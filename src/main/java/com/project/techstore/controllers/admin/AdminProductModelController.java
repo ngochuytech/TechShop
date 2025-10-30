@@ -1,4 +1,4 @@
-package com.project.techstore.controllers;
+package com.project.techstore.controllers.admin;
 
 
 import com.project.techstore.dtos.product.ProductModelDTO;
@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("${api.prefix}/product-models")
+@RequestMapping("${api.prefix}/admin/product-models")
 @RequiredArgsConstructor
-public class ProductModelController {
+public class AdminProductModelController {
 
     private final IProductModelService productModelService;
 

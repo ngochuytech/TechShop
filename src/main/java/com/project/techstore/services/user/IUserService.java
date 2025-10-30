@@ -8,6 +8,8 @@ import com.project.techstore.models.User;
 
 import java.util.List;
 
+import org.springframework.web.multipart.MultipartFile;
+
 public interface IUserService{
     User createUser(UserDTO userDTO) throws Exception;
 
@@ -19,9 +21,11 @@ public interface IUserService{
 
     void updateProfile(String userId, UpdateProfileDTO profileDTO) throws Exception;
 
+    void updateAvatar(User user, MultipartFile avatar) throws Exception;
+
     User updatePhoneUser(String idUser, String phoneNumber) throws Exception;
 
-    User updateAddressUser(String id, AddressDTO addressDTO) throws Exception;
+    void updateAddressUser(String addressId, AddressDTO addressDTO) throws Exception;
 
     void resetPassword(String token, String newPassword) throws Exception;
 

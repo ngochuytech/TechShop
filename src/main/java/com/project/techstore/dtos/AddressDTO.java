@@ -28,4 +28,8 @@ public class AddressDTO {
 
     @Size(max = 200, message = "The maximum length of the suggested name is 200 characters")
     private String suggestedName;
+
+    @NotBlank(message = "Phone number is required")
+    @Size(max = 10, message = "The maximum length of the phone number is 10 characters")
+    private String phoneNumber;
 }

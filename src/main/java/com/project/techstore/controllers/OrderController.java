@@ -45,7 +45,7 @@ public class OrderController {
     }
 
 
-    @PostMapping("/create")
+    @PostMapping("")
     public ResponseEntity<ApiResponse<?>> createOrder(
             @RequestBody @Valid CreateOrderRequest request,
             @AuthenticationPrincipal User user,
@@ -58,9 +58,9 @@ public class OrderController {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(String.join(", ", errorMessages)));
         }
-        orderService.createOrder(user.getId(), request.getOrderDTO(), request.getAddressDTO());
+        Order order = orderService.createOrder(user.getId(), request.getOrderDTO(), request.getAddressDTO());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok("Create order successful"));
+                .body(ApiResponse.ok(OrderResponse.fromOrder(order)));
     }
 
     @PutMapping("/update/{id}")
@@ -80,11 +80,31 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.ok("Update order successful"));
     }
 
-    @PutMapping("/update-status/{id}")
-    public ResponseEntity<ApiResponse<?>> updateStatusOrder(
-            @PathVariable("id") String id, 
-            @RequestParam String status) throws Exception {
-        orderService.updateStatusOrder(id, status);
-        return ResponseEntity.ok(ApiResponse.ok("Update order status successful"));
+    @PutMapping("/{orderId}/cancel")
+    public ResponseEntity<ApiResponse<?>> cancelOrder(
+            @PathVariable("orderId") String orderId) throws Exception {
+        orderService.cancelOrder(orderId);
+        return ResponseEntity.ok(ApiResponse.ok("Hủy đơn hàng thành công"));
+    }
+
+    @PutMapping("/{orderId}/confirm")
+    public ResponseEntity<ApiResponse<?>> confirmOrder(
+            @PathVariable("orderId") String orderId) throws Exception {
+        orderService.confirmOrder(orderId);
+        return ResponseEntity.ok(ApiResponse.ok("Xác nhận đơn hàng thành công"));
+    }
+
+    @PutMapping("/{orderId}/ship")
+    public ResponseEntity<ApiResponse<?>> shipOrder(
+            @PathVariable("orderId") String orderId) throws Exception {
+        orderService.shipOrder(orderId);
+        return ResponseEntity.ok(ApiResponse.ok("Cập nhật trạng thái đơn hàng thành đang giao hàng thành công"));
+    }
+
+    @PutMapping("/{orderId}/delivered")
+    public ResponseEntity<ApiResponse<?>> deliveredOrder(
+            @PathVariable("orderId") String orderId) throws Exception {
+        orderService.deliveredOrder(orderId);
+        return ResponseEntity.ok(ApiResponse.ok("Cập nhật trạng thái đơn hàng thành đã giao hàng thành công"));
     }
 }

@@ -49,9 +49,8 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "enable", nullable = false)
     private Boolean enable;
 
-    @OneToOne
-    @JoinColumn(name = "address_id")
-    private Address address;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<Address> addresses;
 
     @ManyToOne
     @JoinColumn(name = "role_id")

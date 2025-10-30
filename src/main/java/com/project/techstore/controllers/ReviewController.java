@@ -1,28 +1,34 @@
 package com.project.techstore.controllers;
 
-import com.project.techstore.components.JwtTokenProvider;
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.project.techstore.dtos.ReviewDTO;
 import com.project.techstore.models.Review;
 import com.project.techstore.models.User;
 import com.project.techstore.responses.review.ReviewResponse;
 import com.project.techstore.services.IReviewService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("${api.prefix}/reviews")
 @RequiredArgsConstructor
 public class ReviewController {
     private final IReviewService reviewService;
-
-    private final JwtTokenProvider jwtTokenProvider;
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<?> getReviewsByUser(@PathVariable("userId") String userId){

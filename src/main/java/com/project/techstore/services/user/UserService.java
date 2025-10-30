@@ -16,6 +16,8 @@ import com.project.techstore.repositories.AddressRepository;
 import com.project.techstore.repositories.PasswordResetTokenRepository;
 import com.project.techstore.repositories.RoleRepository;
 import com.project.techstore.repositories.UserRepository;
+import com.project.techstore.services.CloudinaryService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,6 +26,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,6 +41,8 @@ public class UserService implements IUserService {
 
     private final AddressRepository addressRepository;
 
+    private final CloudinaryService cloudinaryService;
+
     private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     private final PasswordEncoder passwordEncoder;
@@ -47,15 +52,15 @@ public class UserService implements IUserService {
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
-    public User createUser(UserDTO userDTO) throws Exception{
+    public User createUser(UserDTO userDTO) throws Exception {
         String email = userDTO.getEmail();
-        if(userRepository.existsByEmail(email)){
+        if (userRepository.existsByEmail(email)) {
             throw new Exception("Email đã tồn tại");
         }
         Role role = roleRepository.findById(userDTO.getRoleId())
                 .orElseThrow(() -> new Exception("Role not found"));
 
-        if(role.getName().toUpperCase().equals(Role.ADMIN)){
+        if (role.getName().toUpperCase().equals(Role.ADMIN)) {
             throw new Exception("You can't register an admin account");
         }
 
@@ -71,24 +76,22 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public String loginUser(UserLoginDTO userLoginDTO) throws Exception{
+    public String loginUser(UserLoginDTO userLoginDTO) throws Exception {
         User user = userRepository.findByEmail(userLoginDTO.getEmail())
                 .orElseThrow(() -> new Exception("Email hoặc mật khẩu không đúng!"));
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 userLoginDTO.getEmail(),
                 userLoginDTO.getPassword(),
-                user.getAuthorities()
-        ));
+                user.getAuthorities()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         return jwtTokenProvider.generateToken(user);
     }
 
-
     @Override
     public User updateUser(String id, UserDTO userDTO) throws Exception {
         Optional<User> userList = userRepository.findById(id);
-        if(userList.isEmpty())
+        if (userList.isEmpty())
             throw new DataNotFoundException("Can't found this user");
         User user = userList.get();
         user.setDateOfBirth(userDTO.getDateOfBirth());
@@ -99,15 +102,16 @@ public class UserService implements IUserService {
 
     @Override
     public User updatePhoneUser(String idUser, String phoneNumber) throws Exception {
-        if(phoneNumber.isBlank())
+        if (phoneNumber.isBlank())
             throw new InvalidParamException("Phone number is required");
-        if(!phoneNumber.matches("\\d+"))
-            throw new InvalidParamException("The phone number must be entered as a number, without any other characters.");
-        else if(phoneNumber.length()!=10)
+        if (!phoneNumber.matches("\\d+"))
+            throw new InvalidParamException(
+                    "The phone number must be entered as a number, without any other characters.");
+        else if (phoneNumber.length() != 10)
             throw new InvalidParamException("The phone number must be exactly 10 digits");
 
         Optional<User> userList = userRepository.findById(idUser);
-        if(userList.isEmpty())
+        if (userList.isEmpty())
             throw new DataNotFoundException("Can't found this user");
         User user = userList.get();
         user.setPhone(phoneNumber);
@@ -116,40 +120,26 @@ public class UserService implements IUserService {
 
     @Override
     @Transactional
-    public User updateAddressUser(String id, AddressDTO addressDTO) throws Exception {
-        Optional<User> userList = userRepository.findById(id);
-        if(userList.isEmpty())
-            throw new DataNotFoundException("Can't found this user");
-        User user = userList.get();
-        if(user.getAddress() == null){
-            Address address = Address.builder()
-                    .province(addressDTO.getProvince())
-                    .ward(addressDTO.getWard())
-                    .homeAddress(addressDTO.getHomeAddress())
-                    .suggestedName(addressDTO.getSuggestedName())
-                    .build();
-            addressRepository.save(address);
-            user.setAddress(address);
-        } else {
-            Address address = addressRepository.findById(user.getAddress().getId())
-                    .orElseThrow(() -> new DataNotFoundException("Can't found address of this user"));
-            address.setProvince(addressDTO.getProvince());
-            address.setWard(addressDTO.getWard());
-            address.setHomeAddress(addressDTO.getHomeAddress());
-            address.setSuggestedName(addressDTO.getSuggestedName());
-        }
-        return userRepository.save(user);
+    public void updateAddressUser(String addressId, AddressDTO addressDTO) throws Exception {
+        Address address = addressRepository.findById(addressId)
+                .orElseThrow(() -> new DataNotFoundException("Can't found this address"));
+        address.setProvince(addressDTO.getProvince());
+        address.setWard(addressDTO.getWard());
+        address.setHomeAddress(addressDTO.getHomeAddress());
+        address.setSuggestedName(addressDTO.getSuggestedName());
+        address.setPhone(addressDTO.getPhoneNumber());
+        addressRepository.save(address);
     }
 
     @Override
     @Transactional
     public void resetPassword(String token, String newPassword) throws Exception {
-        if(newPassword.isBlank())
+        if (newPassword.isBlank())
             throw new InvalidParamException("Mật khẩu không được để trống");
         PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByToken(token)
                 .orElseThrow(() -> new InvalidParamException("Token không hợp lệ"));
 
-        if(passwordResetToken.getExpiryDate().isBefore(LocalDateTime.now()))
+        if (passwordResetToken.getExpiryDate().isBefore(LocalDateTime.now()))
             throw new Exception("Token đã hết hạn");
 
         User user = passwordResetToken.getUser();
@@ -160,7 +150,7 @@ public class UserService implements IUserService {
 
     @Override
     public User getUserByToken(String token) throws Exception {
-        if(jwtTokenProvider.isTokenExpired(token)){
+        if (jwtTokenProvider.isTokenExpired(token)) {
             throw new ExpiredTokenException("Token đã hết hạn");
         }
         String email = jwtTokenProvider.getUsername(token);
@@ -194,6 +184,16 @@ public class UserService implements IUserService {
         user.setFullName(profileDTO.getFullName());
         user.setDateOfBirth(profileDTO.getDateOfBirth());
         user.setPhone(profileDTO.getPhone());
+        userRepository.save(user);
+    }
+
+    @Override
+    public void updateAvatar(User user, MultipartFile avatar) throws Exception {
+        if (avatar == null || avatar.isEmpty()) {
+            throw new InvalidParamException("Avatar file is required");
+        }
+        String avatarUrl = cloudinaryService.uploadUserImage(avatar, user.getId());
+        user.setAvatar(avatarUrl);
         userRepository.save(user);
     }
 

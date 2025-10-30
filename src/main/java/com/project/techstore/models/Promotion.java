@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 @Entity
 @Table(name = "Promotions")
@@ -19,11 +17,13 @@ public class Promotion extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(name = "name", length = 500, nullable = false)
-    private String name;
+    @Column(name = "title", length = 100, nullable = false)
+    private String title;
 
     @Column(name = "code", length = 50, nullable = false, unique = true)
     private String code;
+
+    private String description;
 
     @Column(name = "discount_type", length = 50, nullable = false)
     private String discountType;
@@ -46,19 +46,18 @@ public class Promotion extends BaseEntity{
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
-    @ManyToMany
-    @JoinTable(
-            name = "Promotion_categories",
-            joinColumns = @JoinColumn(name = "promotion_id"),
-            inverseJoinColumns = @JoinColumn(name = "category_id")
-    )
-    private Set<Category> categories = new HashSet<>();
+    @Column(name = "usage_limit_per_user")
+    private Integer usageLimitPerUser; // Giới hạn số lần sử dụng mỗi user (null = không giới hạn)
 
-    @ManyToMany
-    @JoinTable(
-            name = "Promotion_brands",
-            joinColumns = @JoinColumn(name = "promotion_id"),
-            inverseJoinColumns = @JoinColumn(name ="brand_id")
-    )
-    private Set<Brand> brands = new HashSet<>();
+    @Column(name = "is_for_new_customer")
+    private Boolean isForNewCustomer; // Chỉ dành cho khách hàng mới (chưa có đơn hàng nào)
+
+    @Column(name = "total_usage_limit")
+    private Integer totalUsageLimit; // Tổng số lần promotion có thể được sử dụng (null = không giới hạn)
+
+    public enum DiscountType {
+        PERCENTAGE,
+        FIXED,
+        SHIPPING
+    }
 }

@@ -1,7 +1,6 @@
 package com.project.techstore.components;
 
-import com.project.techstore.exceptions.ExpiredTokenException;
-import com.project.techstore.exceptions.InvalidParamException;
+import com.project.techstore.exceptions.*;
 import com.project.techstore.models.Token;
 import com.project.techstore.models.User;
 import com.project.techstore.repositories.TokenRepository;
@@ -9,6 +8,9 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
@@ -78,9 +80,17 @@ public class JwtTokenProvider {
                     .getPayload()
                     .getSubject();
         } catch (ExpiredJwtException e) {
-            throw new ExpiredTokenException("Token đã hết hạn");
+            throw new ExpiredTokenException("Token đã hết hạn. Vui lòng đăng nhập lại");
+        } catch (MalformedJwtException e) {
+            throw new MalformedTokenException("Token không đúng định dạng", e);
+        } catch (SignatureException e) {
+            throw new TokenSignatureException("Chữ ký token không hợp lệ", e);
+        } catch (UnsupportedJwtException e) {
+            throw new UnsupportedTokenException("Token không được hỗ trợ", e);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidTokenException("Token trống hoặc không hợp lệ", e);
         } catch (JwtException e) {
-            throw new InvalidParamException("Token không hợp lệ: " + e.getMessage());
+            throw new InvalidTokenException("Token không hợp lệ: " + e.getMessage(), e);
         }
     }
 
@@ -93,22 +103,33 @@ public class JwtTokenProvider {
             // Kiểm tra token tồn tại trong DB ko ?
             Token existingToken = tokenRepository.findByToken(token);
             if(existingToken == null) {
-                throw new InvalidParamException("Token không tồn tại trong hệ thống");
+                throw new InvalidTokenException("Token không tồn tại trong hệ thống");
             }
             if(existingToken.isRevoked()) {
-                throw new InvalidParamException("Token đã bị thu hồi");
+                throw new RevokedTokenException("Token đã bị thu hồi. Vui lòng đăng nhập lại");
             }
             if(!user.getIsActive()) {
-                throw new InvalidParamException("Tài khoản đã bị vô hiệu hóa");
+                throw new UnauthorizedException("Tài khoản đã bị vô hiệu hóa");
             }
             if(isTokenExpired(token)) {
-                throw new ExpiredTokenException("Token đã hết hạn");
+                throw new ExpiredTokenException("Token đã hết hạn. Vui lòng đăng nhập lại");
             }
             return subject.equals(user.getUsername());
+        } catch (ExpiredTokenException | RevokedTokenException | UnauthorizedException | InvalidTokenException e) {
+            // Re-throw custom exceptions
+            throw e;
         } catch (ExpiredJwtException e) {
-            throw new ExpiredTokenException("Token đã hết hạn");
+            throw new ExpiredTokenException("Token đã hết hạn. Vui lòng đăng nhập lại");
+        } catch (MalformedJwtException e) {
+            throw new MalformedTokenException("Token không đúng định dạng", e);
+        } catch (SignatureException e) {
+            throw new TokenSignatureException("Chữ ký token không hợp lệ", e);
+        } catch (UnsupportedJwtException e) {
+            throw new UnsupportedTokenException("Token không được hỗ trợ", e);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidTokenException("Token trống hoặc không hợp lệ", e);
         } catch (JwtException e) {
-            throw new InvalidParamException("Token không hợp lệ: " + e.getMessage());
+            throw new InvalidTokenException("Token không hợp lệ: " + e.getMessage(), e);
         }
     }
     private Claims extractAllClaims(String token) {
@@ -119,9 +140,17 @@ public class JwtTokenProvider {
                     .parseSignedClaims(token)  // Phân tích token đã ký
                     .getPayload();  // Lấy phần body của JWT, chứa claims
         } catch (ExpiredJwtException e) {
-            throw new ExpiredTokenException("Token đã hết hạn");
+            throw new ExpiredTokenException("Token đã hết hạn. Vui lòng đăng nhập lại");
+        } catch (MalformedJwtException e) {
+            throw new MalformedTokenException("Token không đúng định dạng", e);
+        } catch (SignatureException e) {
+            throw new TokenSignatureException("Chữ ký token không hợp lệ", e);
+        } catch (UnsupportedJwtException e) {
+            throw new UnsupportedTokenException("Token không được hỗ trợ", e);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidTokenException("Token trống hoặc không hợp lệ", e);
         } catch (JwtException e) {
-            throw new InvalidParamException("Token không hợp lệ: " + e.getMessage());
+            throw new InvalidTokenException("Token không hợp lệ: " + e.getMessage(), e);
         }
     }
 
@@ -144,14 +173,14 @@ public class JwtTokenProvider {
     public String getEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || authentication.getPrincipal() == null) {
-            throw new RuntimeException("Không tìm thấy thông tin người dùng");
+            throw new UnauthorizedException("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập");
         }
         
         Object principal = authentication.getPrincipal();
         
         // Kiểm tra nếu là anonymous user
         if (principal instanceof String && "anonymousUser".equals(principal)) {
-            throw new RuntimeException("User chưa được xác thực (anonymous user)");
+            throw new UnauthorizedException("Bạn chưa đăng nhập. Vui lòng đăng nhập để tiếp tục");
         }
         
         if (principal instanceof User) {
@@ -166,20 +195,20 @@ public class JwtTokenProvider {
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || authentication.getPrincipal() == null) {
-            throw new RuntimeException("Không tìm thấy thông tin người dùng");
+            throw new UnauthorizedException("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập");
         }
         
         Object principal = authentication.getPrincipal();
         
         // Kiểm tra nếu là anonymous user
         if (principal instanceof String && "anonymousUser".equals(principal)) {
-            throw new RuntimeException("User chưa được xác thực (anonymous user)");
+            throw new UnauthorizedException("Bạn chưa đăng nhập. Vui lòng đăng nhập để tiếp tục");
         }
         
         if (principal instanceof User) {
             return (User) principal;
         } else {
-            throw new RuntimeException("Principal không phải là User object. Principal type: " + 
+            throw new JwtAuthenticationException("Principal không phải là User object. Principal type: " + 
                 principal.getClass().getName() + ", value: " + principal);
         }
     }

@@ -1,22 +1,23 @@
 package com.project.techstore.repositories;
 
 import com.project.techstore.models.Promotion;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Optional;
 
 public interface PromotionRepository extends JpaRepository<Promotion, String> {
-    List<Promotion> findByCategoriesId(Long categoryId);
+    Page<Promotion> findByIsActiveTrue(Pageable pageable);
 
-    List<Promotion> findByBrandsId(Long brandId);
-
-    List<Promotion> findByCategoriesIdAndIsActiveTrue(Long categoryId);
-
-    List<Promotion> findByBrandsIdAndIsActiveTrue(Long brandId);
+    boolean existsByCode(String code);
+    
+    Optional<Promotion> findByCode(String code);
 
     @Modifying
     @Query("UPDATE Promotion p SET p.isActive = false " +

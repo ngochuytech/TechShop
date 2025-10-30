@@ -28,8 +28,8 @@ public class CartController {
      * GET /api/v1/cart - Lấy giỏ hàng của user hiện tại
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<CartDTO>> getCart(@AuthenticationPrincipal User user) throws Exception {
-        CartDTO cart = cartService.getCartByUserId(user.getId());
+    public ResponseEntity<ApiResponse<CartDTO>> getCart(@AuthenticationPrincipal User currentUser) throws Exception {
+        CartDTO cart = cartService.getCartByUserId(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.ok(cart));
     }
 

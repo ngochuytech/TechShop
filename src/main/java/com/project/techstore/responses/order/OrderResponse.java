@@ -20,11 +20,14 @@ import lombok.Setter;
 public class OrderResponse {
     private String id;
     private ShippingAddress shippingAddress;
-    private Double totalPrice;
+    private Long totalPrice;
+    private Long shippingFee;
     private String paymentMethod;
     private String status;
     private String note;
     private List<OrderItemResponse> orderItems;
+    private String createdAt;
+    private String updatedAt;
 
     @AllArgsConstructor
     @NoArgsConstructor
@@ -77,11 +80,14 @@ public class OrderResponse {
         return OrderResponse.builder()
                 .id(order.getId())
                 .shippingAddress(shippingAddress)
-                .totalPrice(order.getTotalPrice().doubleValue())
+                .totalPrice(order.getTotalPrice())
+                .shippingFee(order.getShippingFee() != null ? order.getShippingFee() : 0L)
                 .paymentMethod(order.getPaymentMethod())
                 .status(order.getStatus())
                 .note(order.getNote())
                 .orderItems(orderItemResponses)
+                .createdAt(order.getCreatedAt().toString())
+                .updatedAt(order.getUpdatedAt().toString())
                 .build();
     }
 }

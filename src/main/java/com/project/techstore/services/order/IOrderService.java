@@ -17,5 +17,8 @@ public interface IOrderService {
 
     Order updateOrder(String id, OrderDTO orderDTO, AddressDTO addressDTO) throws Exception;
 
-    Order updateStatusOrder(String id, String newStatus) throws Exception;
+    void cancelOrder(String id) throws Exception;
+    void confirmOrder(String id) throws Exception;
+    void shipOrder(String id) throws Exception;
+    void deliveredOrder(String id) throws Exception;
 }

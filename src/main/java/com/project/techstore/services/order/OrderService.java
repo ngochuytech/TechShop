@@ -11,6 +11,9 @@ import com.project.techstore.repositories.OrderRepository;
 import com.project.techstore.repositories.ProductRepository;
 import com.project.techstore.repositories.ProductVariantRepository;
 import com.project.techstore.repositories.UserRepository;
+import com.project.techstore.repositories.PromotionRepository;
+import com.project.techstore.services.promotion.PromotionValidationService;
+import com.project.techstore.services.promotion.UserPromotionUsageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,12 +34,18 @@ public class OrderService implements IOrderService{
     private final ProductRepository productRepository;
 
     private final ProductVariantRepository productVariantRepository;
+    
+    private final PromotionRepository promotionRepository;
+    
+    private final PromotionValidationService promotionValidationService;
+    
+    private final UserPromotionUsageService userPromotionUsageService;
 
     @Override
     public List<Order> getOrderByStatus(String status) throws Exception {
-        if(!status.equals(OrderStatus.PENDING) && !status.equals(OrderStatus.PROCESSING) &&
-                !status.equals(OrderStatus.SHIPPED) && !status.equals(OrderStatus.DELIVERED) &&
-                !status.equals(OrderStatus.CANCELLED))
+        if(!status.equals(Order.Status.PENDING.name()) && !status.equals(Order.Status.CONFIRMED.name()) &&
+                !status.equals(Order.Status.SHIPPING.name()) && !status.equals(Order.Status.DELIVERED.name()) &&
+                !status.equals(Order.Status.CANCELLED.name()))
             throw new InvalidParamException("Status invalid param");
         return orderRepository.findByStatus(status);
     }
@@ -70,16 +79,51 @@ public class OrderService implements IOrderService{
             })
             .sum();
 
+        Long shippingFee = orderDTO.getShippingFee();
+
+        // Xử lý promotion nếu có
+        Promotion promotion = null;
+        Long discountAmount = 0L;
+        
+        if (orderDTO.getPromotionCode() != null && !orderDTO.getPromotionCode().trim().isEmpty()) {
+            promotion = promotionRepository.findByCode(orderDTO.getPromotionCode())
+                .orElseThrow(() -> new DataNotFoundException("Mã khuyến mãi không tồn tại"));
+            
+            // Validate promotion
+            promotionValidationService.validatePromotionForUser(user, promotion);
+            promotionValidationService.validateOrderValueForPromotion(totalAmount, promotion);
+            
+            // Tính discount với shippingFee nếu là SHIPPING promotion
+            discountAmount = promotionValidationService.calculateDiscountAmount(totalAmount, promotion, shippingFee);
+        }
+
+        // Tính tổng tiền sau khi giảm giá + phí ship
+        long finalAmount = totalAmount - discountAmount + shippingFee;
+        if (finalAmount < 0) {
+            finalAmount = 0L;
+        }
+
         Order order = Order.builder()
-            .totalPrice(totalAmount)
+            .totalPrice(finalAmount)
             .paymentMethod(orderDTO.getPaymentMethod())
-            .status(OrderStatus.PENDING)
+            .status(Order.Status.PENDING.name())
             .note(orderDTO.getNote() != null ? orderDTO.getNote() : "")
             .user(user)
+            .promotion(promotion)
             .address(address)
             .build();
+        if(orderDTO.getPromotionCode()!= null && promotion.getDiscountType().equals(Promotion.DiscountType.SHIPPING.name())) {
+            order.setShippingFee(Math.max(shippingFee - promotion.getDiscountValue(), 0));
+        } else {
+            order.setShippingFee(shippingFee);
+        }
         addressRepository.save(address);
         Order savedOrder = orderRepository.save(order);
+
+        // Ghi nhận việc sử dụng promotion
+        if (promotion != null) {
+            userPromotionUsageService.recordUsage(user, promotion, savedOrder, discountAmount);
+        }
 
         if (orderDTO.getOrderItemDTOs() != null) {
             List<OrderItem> orderItems = new java.util.ArrayList<>();
@@ -105,6 +149,7 @@ public class OrderService implements IOrderService{
                 orderItems.add(orderItem);
             }
             orderItemRepository.saveAll(orderItems);
+            savedOrder.setOrderItems(orderItems);
         }
         return savedOrder;
     }
@@ -115,6 +160,12 @@ public class OrderService implements IOrderService{
         Order orderExisting = orderRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("This order doesn't exist"));
         orderExisting.setPaymentMethod(orderDTO.getPaymentMethod());
+        
+        // Cập nhật shipping fee nếu có
+        if (orderDTO.getShippingFee() != null) {
+            orderExisting.setShippingFee(orderDTO.getShippingFee());
+        }
+        
         if(addressDTO != null){
             Address existingAddress = orderExisting.getAddress();
             existingAddress.setProvince(addressDTO.getProvince());
@@ -126,20 +177,46 @@ public class OrderService implements IOrderService{
     }
 
     @Override
-    public Order updateStatusOrder(String id, String newStatus) throws Exception {
-        if(!newStatus.equals(OrderStatus.PENDING) && !newStatus.equals(OrderStatus.PROCESSING) &&
-                !newStatus.equals(OrderStatus.SHIPPED) && !newStatus.equals(OrderStatus.DELIVERED) &&
-                !newStatus.equals(OrderStatus.CANCELLED))
-            throw new InvalidParamException("Status invalid param");
-        Order orderExisting = orderRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("This order doesn't exist"));
-        orderExisting.setStatus(newStatus);
-        return orderRepository.save(orderExisting);
-    }
-
-    @Override
     public Order getOrderById(String orderId) throws Exception {
         return orderRepository.findById(orderId)
                 .orElseThrow(() -> new DataNotFoundException("This order doesn't exist"));
+    }
+
+    @Override
+    public void cancelOrder(String id) throws Exception {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException("Không tìm thấy đơn hàng"));
+        if(!order.getStatus().equals(Order.Status.PENDING.name())) {
+            throw new InvalidParamException("Chỉ có thể hủy đơn hàng ở trạng thái đang chờ xử lý");
+        }
+        order.setStatus(Order.Status.CANCELLED.name());
+        orderRepository.save(order);
+    }
+
+    @Override
+    public void confirmOrder(String id) throws Exception {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException("Không tìm thấy đơn hàng"));
+        if(!order.getStatus().equals(Order.Status.PENDING.name())) {
+            throw new InvalidParamException("Chỉ có thể xác nhận đơn hàng ở trạng thái đang chờ xử lý");
+        }
+        order.setStatus(Order.Status.CONFIRMED.name());
+        orderRepository.save(order);
+    }
+
+    @Override
+    public void shipOrder(String id) throws Exception {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException("Không tìm thấy đơn hàng"));
+        order.setStatus(Order.Status.SHIPPING.name());
+        orderRepository.save(order);
+    }
+
+    @Override
+    public void deliveredOrder(String id) throws Exception {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException("Không tìm thấy đơn hàng"));
+        order.setStatus(Order.Status.DELIVERED.name());
+        orderRepository.save(order);
     }
 }

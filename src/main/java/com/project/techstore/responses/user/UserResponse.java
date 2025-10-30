@@ -1,6 +1,7 @@
 package com.project.techstore.responses.user;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.project.techstore.models.User;
 
@@ -21,7 +22,7 @@ public class UserResponse {
     private String avatar;
     private LocalDate dateOfBirth;
 
-    private AddressResponse address;
+    private List<AddressResponse> address;
 
     @Data
     @AllArgsConstructor
@@ -36,15 +37,17 @@ public class UserResponse {
     }
 
     public static UserResponse fromUser(User user) {
-        AddressResponse addressResponse = null;
-        if (user.getAddress() != null) {
-            addressResponse = AddressResponse.builder()
-                    .id(user.getAddress().getId())
-                    .province(user.getAddress().getProvince())
-                    .ward(user.getAddress().getWard())
-                    .homeAddress(user.getAddress().getHomeAddress())
-                    .suggestedName(user.getAddress().getSuggestedName())
-                    .build();
+        List<AddressResponse> addressResponses = null;
+        if (user.getAddresses() != null) {
+            addressResponses = user.getAddresses().stream()
+                    .map(address -> AddressResponse.builder()
+                            .id(address.getId())
+                            .province(address.getProvince())
+                            .ward(address.getWard())
+                            .homeAddress(address.getHomeAddress())
+                            .suggestedName(address.getSuggestedName())
+                            .build())
+                    .toList();
         }
 
         return UserResponse.builder()
@@ -52,7 +55,7 @@ public class UserResponse {
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
-                .address(addressResponse)
+                .address(addressResponses)
                 .avatar(user.getAvatar())
                 .dateOfBirth(user.getDateOfBirth())
                 .build();

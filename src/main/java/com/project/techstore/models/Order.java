@@ -17,8 +17,11 @@ public class Order extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
+    @Column(name = "total_price",nullable = false)
     private Long totalPrice;
+
+    @Column(name = "shipping_fee")
+    private Long shippingFee;
 
     @Column(length = 50, nullable = false)
     private String paymentMethod;
@@ -32,14 +35,22 @@ public class Order extends BaseEntity{
     @JoinColumn(name = "user_id")
     private User user;
 
+    @OneToOne
+    @JoinColumn(name = "address_id")
+    private Address address;
+
     @ManyToOne
     @JoinColumn(name = "promotion_id")
     private Promotion promotion;
 
-    @ManyToOne
-    @JoinColumn(name = "address_id")
-    private Address address;
-
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItem> orderItems;
+
+    public enum Status {
+        PENDING,
+        CONFIRMED,
+        SHIPPING,
+        DELIVERED,
+        CANCELLED
+    }
 }
