@@ -1,4 +1,4 @@
-package com.project.techstore.controllers;
+package com.project.techstore.controllers.customer;
 
 import com.project.techstore.dtos.UpdateCartItemRequest;
 import com.project.techstore.dtos.cart.AddToCartRequest;
@@ -20,7 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("${api.prefix}/cart")
 @RequiredArgsConstructor
-public class CartController {
+public class CustomerCartController {
     
     private final CartService cartService;
 

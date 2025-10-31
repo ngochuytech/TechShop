@@ -1,10 +1,13 @@
 package com.project.techstore.services.promotion;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.project.techstore.dtos.admin.promotion.PromotionDTO;
 import com.project.techstore.models.Promotion;
+import com.project.techstore.models.User;
 
 public interface IPromotionService {
     Promotion createPromotion(PromotionDTO promotionDTO) throws Exception;
@@ -16,4 +19,6 @@ public interface IPromotionService {
     void deletePromotion(String promotionId) throws Exception;
 
     Page<Promotion> getAllPromotions(Pageable pageable) throws Exception;
+
+    List<Promotion> getAvailablePromotions(User user) throws Exception;
 }

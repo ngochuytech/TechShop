@@ -21,8 +21,6 @@ public class ProductVariantController {
     
     private final IProductVariantService productVariantService;
     
-    
-    
     @GetMapping("/product/{productId}")
     public ResponseEntity<?> getVariantsByProductId(@PathVariable("productId") String productId) {
         try {

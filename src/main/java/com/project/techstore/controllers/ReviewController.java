@@ -1,27 +1,21 @@
 package com.project.techstore.controllers;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.project.techstore.dtos.ReviewDTO;
 import com.project.techstore.models.Review;
-import com.project.techstore.models.User;
+import com.project.techstore.responses.ApiResponse;
 import com.project.techstore.responses.review.ReviewResponse;
-import com.project.techstore.services.IReviewService;
+import com.project.techstore.services.review.IReviewService;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -30,73 +24,43 @@ import lombok.RequiredArgsConstructor;
 public class ReviewController {
     private final IReviewService reviewService;
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<?> getReviewsByUser(@PathVariable("userId") String userId){
-        try {
-            return ResponseEntity.ok(reviewService.getReviewByUser(userId));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    @GetMapping("/product/{productId}/star-count")
+    public ResponseEntity<?> getReviewStarCount(@PathVariable("productId") String productId) throws Exception {
+        var starCount = reviewService.countReviewByStar(productId);
+        return ResponseEntity.ok(ApiResponse.ok(starCount));
     }
 
     @GetMapping("/product/{productId}")
-    public ResponseEntity<?> getReviewsByProduct(@PathVariable("productId") String productId){
-        try {
-            List<Review> reviews = reviewService.getReviewByProduct(productId);
-            List<ReviewResponse> reviewResponses = reviews.stream()
-                    .map(ReviewResponse::fromReview)
-                    .toList();
+    public ResponseEntity<?> getReviewsByProduct(@PathVariable("productId") String productId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir)
+            throws Exception {
 
-            return ResponseEntity.ok(reviewResponses);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Review> reviews = reviewService.getReviewByProduct(productId, pageable);
+        Page<ReviewResponse> reviewResponses = reviews.map(ReviewResponse::fromReview);
+
+        return ResponseEntity.ok(ApiResponse.ok(reviewResponses));
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<?> createReview(@RequestBody @Valid ReviewDTO reviewDTO,
-        @AuthenticationPrincipal User user
-        , BindingResult result){
-        try {
-            if(result.hasErrors()){
-                List<String> errorMessages = result.getFieldErrors()
-                        .stream()
-                        .map(FieldError::getDefaultMessage)
-                        .toList();
-                return ResponseEntity.badRequest().body(errorMessages);
-            }
-            reviewService.createReview(user, reviewDTO);
-            return ResponseEntity.ok("Create a new review successful");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    @GetMapping("/product/{productId}/star/{star}")
+    public ResponseEntity<?> getReviewsByProductAndStar(@PathVariable("productId") String productId,
+            @PathVariable("star") int star,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir)
+            throws Exception {
+
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Review> reviews = reviewService.getReviewByProductAndStar(productId, star, pageable);
+        Page<ReviewResponse> reviewResponses = reviews.map(ReviewResponse::fromReview);
+
+        return ResponseEntity.ok(ApiResponse.ok(reviewResponses));
     }
 
-    @PutMapping("/update/{id}")
-    public ResponseEntity<?> updateReview(@PathVariable("id") String id ,@RequestBody @Valid ReviewDTO reviewDTO,
-                                          BindingResult result){
-        try {
-            if(result.hasErrors()){
-                List<String> errorMessages = result.getFieldErrors()
-                        .stream()
-                        .map(FieldError::getDefaultMessage)
-                        .toList();
-                return ResponseEntity.badRequest().body(errorMessages);
-            }
-            reviewService.updateReview(id, reviewDTO);
-            return ResponseEntity.ok("Update a review successful");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> deleteReview(@PathVariable("id") String id){
-        try {
-            reviewService.deleteReview(id);
-            return ResponseEntity.ok("Delete a review successful");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
 }

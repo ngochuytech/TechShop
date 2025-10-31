@@ -22,7 +22,7 @@ public class UserResponse {
     private String avatar;
     private LocalDate dateOfBirth;
 
-    private List<AddressResponse> address;
+    private List<AddressResponse> addresses;
 
     @Data
     @AllArgsConstructor
@@ -34,18 +34,21 @@ public class UserResponse {
         private String ward;
         private String homeAddress;
         private String suggestedName;
+        private String phone;
     }
 
     public static UserResponse fromUser(User user) {
         List<AddressResponse> addressResponses = null;
         if (user.getAddresses() != null) {
             addressResponses = user.getAddresses().stream()
+                    .filter(address -> address.getIsDeleted()==false)
                     .map(address -> AddressResponse.builder()
                             .id(address.getId())
                             .province(address.getProvince())
                             .ward(address.getWard())
                             .homeAddress(address.getHomeAddress())
                             .suggestedName(address.getSuggestedName())
+                            .phone(address.getPhone())
                             .build())
                     .toList();
         }
@@ -55,7 +58,7 @@ public class UserResponse {
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
-                .address(addressResponses)
+                .addresses(addressResponses)
                 .avatar(user.getAvatar())
                 .dateOfBirth(user.getDateOfBirth())
                 .build();

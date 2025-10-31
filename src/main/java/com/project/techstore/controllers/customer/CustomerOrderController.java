@@ -1,4 +1,4 @@
-package com.project.techstore.controllers;
+package com.project.techstore.controllers.customer;
 
 import com.project.techstore.dtos.order.CreateOrderRequest;
 import com.project.techstore.models.Order;
@@ -19,9 +19,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("${api.prefix}/orders")
+@RequestMapping("${api.prefix}/customer/orders")
 @RequiredArgsConstructor
-public class OrderController {
+public class CustomerOrderController {
     private final IOrderService orderService;
 
     @GetMapping("/status")
@@ -63,48 +63,10 @@ public class OrderController {
                 .body(ApiResponse.ok(OrderResponse.fromOrder(order)));
     }
 
-    @PutMapping("/update/{id}")
-    public ResponseEntity<ApiResponse<?>> updateOrder(
-            @PathVariable("id") String id,
-            @RequestBody @Valid CreateOrderRequest request,
-            BindingResult result) throws Exception {
-        if(result.hasErrors()){
-            List<String> errorMessages = result.getFieldErrors()
-                    .stream()
-                    .map(FieldError::getDefaultMessage)
-                    .toList();
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(String.join(", ", errorMessages)));
-        }
-        orderService.updateOrder(id, request.getOrderDTO(), request.getAddressDTO());
-        return ResponseEntity.ok(ApiResponse.ok("Update order successful"));
-    }
-
     @PutMapping("/{orderId}/cancel")
-    public ResponseEntity<ApiResponse<?>> cancelOrder(
+    public ResponseEntity<ApiResponse<?>> cancelOrder(@AuthenticationPrincipal User user,
             @PathVariable("orderId") String orderId) throws Exception {
-        orderService.cancelOrder(orderId);
+        orderService.cancelOrder(user.getId(), orderId);
         return ResponseEntity.ok(ApiResponse.ok("Hủy đơn hàng thành công"));
-    }
-
-    @PutMapping("/{orderId}/confirm")
-    public ResponseEntity<ApiResponse<?>> confirmOrder(
-            @PathVariable("orderId") String orderId) throws Exception {
-        orderService.confirmOrder(orderId);
-        return ResponseEntity.ok(ApiResponse.ok("Xác nhận đơn hàng thành công"));
-    }
-
-    @PutMapping("/{orderId}/ship")
-    public ResponseEntity<ApiResponse<?>> shipOrder(
-            @PathVariable("orderId") String orderId) throws Exception {
-        orderService.shipOrder(orderId);
-        return ResponseEntity.ok(ApiResponse.ok("Cập nhật trạng thái đơn hàng thành đang giao hàng thành công"));
-    }
-
-    @PutMapping("/{orderId}/delivered")
-    public ResponseEntity<ApiResponse<?>> deliveredOrder(
-            @PathVariable("orderId") String orderId) throws Exception {
-        orderService.deliveredOrder(orderId);
-        return ResponseEntity.ok(ApiResponse.ok("Cập nhật trạng thái đơn hàng thành đã giao hàng thành công"));
     }
 }

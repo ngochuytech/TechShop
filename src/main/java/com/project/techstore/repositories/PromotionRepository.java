@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface PromotionRepository extends JpaRepository<Promotion, String> {
@@ -23,4 +24,6 @@ public interface PromotionRepository extends JpaRepository<Promotion, String> {
     @Query("UPDATE Promotion p SET p.isActive = false " +
             "WHERE p.endTime <= :now AND p.isActive = true")
     int deactivateExpiredPromotions(@Param("now")LocalDateTime now);
+
+    List<Promotion> findByStartDateBeforeAndEndTimeAfterAndIsActiveTrue(LocalDateTime now1, LocalDateTime now2);
 }

@@ -30,6 +30,6 @@ public class AddressDTO {
     private String suggestedName;
 
     @NotBlank(message = "Phone number is required")
-    @Size(max = 10, message = "The maximum length of the phone number is 10 characters")
+    @Size(min = 10, max = 10, message = "Số điện thoại phải đúng 10 chữ số")
     private String phoneNumber;
 }

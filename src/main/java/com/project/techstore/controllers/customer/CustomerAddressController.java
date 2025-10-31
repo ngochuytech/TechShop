@@ -1,4 +1,4 @@
-package com.project.techstore.controllers;
+package com.project.techstore.controllers.customer;
 
 import com.project.techstore.dtos.AddressDTO;
 import com.project.techstore.models.Address;
@@ -17,7 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("${api.prefix}/address")
 @RequiredArgsConstructor
-public class AddressController {
+public class CustomerAddressController {
     private final IAddressService addressService;
 
     @PostMapping("")
@@ -51,8 +51,15 @@ public class AddressController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
-
-
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteAddress(@PathVariable String id){
+        try {
+            addressService.deleteAddress(id);
+            return ResponseEntity.ok("Xóa địa chỉ thành công");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

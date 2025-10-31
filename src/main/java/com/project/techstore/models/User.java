@@ -49,7 +49,7 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "enable", nullable = false)
     private Boolean enable;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Address> addresses;
 
     @ManyToOne

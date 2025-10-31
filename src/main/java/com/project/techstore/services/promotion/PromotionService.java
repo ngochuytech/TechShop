@@ -4,6 +4,8 @@ import com.project.techstore.dtos.admin.promotion.PromotionDTO;
 import com.project.techstore.exceptions.DataNotFoundException;
 import com.project.techstore.exceptions.InvalidParamException;
 import com.project.techstore.models.Promotion;
+import com.project.techstore.models.User;
+import com.project.techstore.repositories.OrderRepository;
 import com.project.techstore.repositories.PromotionRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -15,11 +17,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class PromotionService implements IPromotionService {
     private final PromotionRepository promotionRepository;
+
+    private final OrderRepository orderRepository;
+
+    private final UserPromotionUsageService userPromotionUsageService;
 
     @Scheduled(fixedRate = 60000)
     @Transactional
@@ -64,7 +72,8 @@ public class PromotionService implements IPromotionService {
                 .minOrderValue(promotionDTO.getMinOrderValue())
                 .maxDiscount(promotionDTO.getMaxDiscount())
                 .usageLimitPerUser(promotionDTO.getUsageLimitPerUser())
-                .isForNewCustomer(promotionDTO.getIsForNewCustomer() != null ? promotionDTO.getIsForNewCustomer() : false)
+                .isForNewCustomer(
+                        promotionDTO.getIsForNewCustomer() != null ? promotionDTO.getIsForNewCustomer() : false)
                 .totalUsageLimit(promotionDTO.getTotalUsageLimit())
                 .isActive(true)
                 .build();
@@ -109,5 +118,31 @@ public class PromotionService implements IPromotionService {
                 .orElseThrow(() -> new DataNotFoundException("Mã khuyến mãi không tồn tại"));
         promotion.setIsActive(isActive);
         promotionRepository.save(promotion);
+    }
+
+    @Override
+    public List<Promotion> getAvailablePromotions(User user) throws Exception {
+        List<Promotion> promotions = promotionRepository
+                .findByStartDateBeforeAndEndTimeAfterAndIsActiveTrue(LocalDateTime.now(), LocalDateTime.now());
+        List<Promotion> availablePromotions = new ArrayList<>();
+        for (Promotion promo : promotions) {
+            if (promo.getTotalUsageLimit() <= userPromotionUsageService.countTotalUsage(promo)) {
+                continue;
+            }
+            if (promo.getIsForNewCustomer()) {
+                long completedOrderCount = orderRepository.countByUserAndStatus(user, "DELIVERED");
+                if (completedOrderCount > 0) {
+                    continue;
+                }
+            }
+            if (promo.getUsageLimitPerUser() > 0) {
+                long userUsageCount = userPromotionUsageService.countUserUsage(user, promo);
+                if (userUsageCount >= promo.getUsageLimitPerUser()) {
+                    continue;
+                }
+            }
+            availablePromotions.add(promo);
+        }
+        return availablePromotions;
     }
 }
