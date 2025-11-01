@@ -8,6 +8,9 @@ import com.project.techstore.repositories.*;
 import com.project.techstore.responses.product.ProductRespone;
 import com.project.techstore.services.CloudinaryService;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -92,7 +95,7 @@ public class ProductService implements IProductService {
 
     @Override
     @Transactional
-    public Product createProduct(ProductDTO productDTO, List<MultipartFile> images) throws Exception {
+    public Product createProduct(ProductDTO productDTO, List<MultipartFile> images, Integer primaryImageIndex) throws Exception {
         ProductModel productModel = productModelRepository.findById(productDTO.getProductModelId())
                 .orElseThrow(() -> new DataNotFoundException("This product model doesn't exist"));
         Product product = Product.builder()
@@ -108,6 +111,11 @@ public class ProductService implements IProductService {
 
         // Xử lý upload images nếu có
         if (images != null && !images.isEmpty()) {
+            // Kiểm tra primaryImageIndex hợp lệ
+            if (primaryImageIndex == null || primaryImageIndex < 0 || primaryImageIndex >= images.size()) {
+                primaryImageIndex = 0; // Mặc định là ảnh đầu tiên nếu không hợp lệ
+            }
+            
             for (int i = 0; i < images.size(); i++) {
                 MultipartFile file = images.get(i);
                 if (!file.isEmpty()) {
@@ -117,7 +125,7 @@ public class ProductService implements IProductService {
                     Media media = new Media();
                     media.setMediaPath(imageUrl);
                     media.setMediaType(file.getContentType());
-                    media.setIsPrimary(i == 0);
+                    media.setIsPrimary(i == primaryImageIndex);
                     media.setProduct(product);
 
                     mediaRepository.save(media);
@@ -246,5 +254,11 @@ public class ProductService implements IProductService {
         product.setPrice(minPrice);
         product.setStock(totalStock);
         productRepository.save(product);
+    }
+
+    @Override
+    public Page<Product> searchProducts(String keyword, Pageable pageable) throws Exception {
+        Page<Product> productsPage = productRepository.findByNameContaining(keyword, pageable);
+        return productsPage;
     }
 }

@@ -40,7 +40,7 @@ public class JwtTokenProvider {
 
         Date currentDate = new Date();
 
-        Date expireDate = new Date(currentDate.getTime() + jwtExpirationDate);
+        Date expireDate = new Date(currentDate.getTime() + jwtExpirationDate  * 1000);
 
         return Jwts.builder()
                 .subject(username)
@@ -55,7 +55,7 @@ public class JwtTokenProvider {
 
         Date currentDate = new Date();
 
-        Date expireDate = new Date(currentDate.getTime() + jwtExpirationDate);
+        Date expireDate = new Date(currentDate.getTime() + jwtExpirationDate * 1000);
 
         return Jwts.builder()
                 .subject(username)
@@ -155,7 +155,7 @@ public class JwtTokenProvider {
     }
 
 
-    public  <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = this.extractAllClaims(token);
         return claimsResolver.apply(claims);
     }

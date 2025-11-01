@@ -1,6 +1,7 @@
 package com.project.techstore.repositories;
 
 import com.project.techstore.models.ProductVariant;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

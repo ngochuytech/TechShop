@@ -51,13 +51,10 @@ public class AdminProductController {
 
     @PostMapping(value = "/create", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<?> createProduct(@RequestPart @Valid ProductDTO productDTO,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
-        try {
-            productService.createProduct(productDTO, images);
-            return ResponseEntity.ok("Create a new product successful");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @RequestPart(value = "primaryImageIndex", required = false) Integer primaryImageIndex) throws Exception {
+        productService.createProduct(productDTO, images, primaryImageIndex);
+        return ResponseEntity.ok("Tạo sản phẩm thành công");
     }
 
     @PutMapping("/update/{id}")

@@ -1,8 +1,10 @@
 package com.project.techstore.controllers;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -122,43 +124,35 @@ public class UserController {
 
     @PostMapping("/refresh-token")
     public ResponseEntity<?> refreshToken(HttpServletRequest request,
-            HttpServletResponse response) {
-        try {
-            String refreshToken = null;
-            if (request.getCookies() != null) {
-                for (Cookie cookie : request.getCookies()) {
-                    if ("refreshToken".equals(cookie.getName())) {
-                        refreshToken = cookie.getValue();
-                        break;
-                    }
-                }
-            }
+            HttpServletResponse response) throws Exception{
+        String refreshToken = Arrays.stream(request.getCookies())
+                .filter(cookie -> "refreshToken".equals(cookie.getName()))
+                .findFirst()
+                .map(Cookie::getValue)
+                .orElse(null);
 
-            if (refreshToken == null) {
-                return ResponseEntity.badRequest().body(ApiResponse.error("Refresh token không tồn tại"));
-            }
-
-            Token tokenEntity = tokenService.findByRefreshToken(refreshToken);
-            if (tokenEntity == null || tokenEntity.isRevoked()) {
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Refresh token không hợp lệ hoặc đã bị thu hồi"));
-            }
-
-            User user = userService.getUserById(tokenEntity.getUser().getId());
-            Token newToken = tokenService.refreshToken(refreshToken, user);
-
-            // Cập nhật refreshToken cookie (optional - nếu muốn rotate refreshToken)
-            Cookie refreshTokenCookie = new Cookie("refreshToken", newToken.getRefreshToken());
-            refreshTokenCookie.setHttpOnly(true);
-            refreshTokenCookie.setSecure(false); // Set true nếu dùng HTTPS
-            refreshTokenCookie.setPath("/");
-            refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60);
-            response.addCookie(refreshTokenCookie);
-
-            return ResponseEntity.ok(ApiResponse.ok(newToken.getToken()));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        if (refreshToken == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Refresh token không tồn tại"));
         }
+
+        Token tokenEntity = tokenService.findByRefreshToken(refreshToken);
+        if (tokenEntity == null || tokenEntity.isRevoked()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Refresh token không hợp lệ hoặc đã bị thu hồi"));
+        }
+
+        User user = userService.getUserById(tokenEntity.getUser().getId());
+        Token newToken = tokenService.refreshToken(refreshToken, user);
+
+        // Cập nhật refreshToken cookie (optional - nếu muốn rotate refreshToken)
+        Cookie refreshTokenCookie = new Cookie("refreshToken", newToken.getRefreshToken());
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(false);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60);
+        response.addCookie(refreshTokenCookie);
+
+        return ResponseEntity.ok(ApiResponse.ok(newToken.getToken()));
     }
 
     @PutMapping("/update-profile")
@@ -212,9 +206,9 @@ public class UserController {
 
     @PutMapping("/avatar")
     public ResponseEntity<?> updateAvatar(@RequestPart("avatar") MultipartFile avatar,
-        @AuthenticationPrincipal User user) throws Exception {
-            userService.updateAvatar(user, avatar);
-            return ResponseEntity.ok("Update avatar successfully");
+            @AuthenticationPrincipal User user) throws Exception {
+        userService.updateAvatar(user, avatar);
+        return ResponseEntity.ok("Update avatar successfully");
     }
 
     @GetMapping("/auth/social-login")

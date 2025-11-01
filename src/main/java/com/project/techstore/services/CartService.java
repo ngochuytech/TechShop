@@ -26,9 +26,6 @@ public class CartService {
     private final ProductRepository productRepository;
     private final ProductVariantRepository productVariantRepository;
 
-    /**
-     * Lấy giỏ hàng của user
-     */
     public CartDTO getCartByUserId(String userId) throws Exception {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new DataNotFoundException("User not found"));
@@ -39,9 +36,6 @@ public class CartService {
         return convertToDTO(cart);
     }
 
-    /**
-     * Thêm sản phẩm vào giỏ hàng
-     */
     @Transactional
     public CartDTO addToCart(String userId, AddToCartRequest request) throws Exception {
         // Validate request

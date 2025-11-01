@@ -91,8 +91,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity<ApiResponse<Object>> handleNullPointerException(NullPointerException ex) {
-        // Xử lý trường hợp @AuthenticationPrincipal null hoặc currentUser.getEmail()
-        // null
+        // Xử lý trường hợp @AuthenticationPrincipal null
         String errorMessage = ex.getMessage();
         StackTraceElement[] stackTrace = ex.getStackTrace();
 

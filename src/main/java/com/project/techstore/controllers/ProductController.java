@@ -2,6 +2,10 @@ package com.project.techstore.controllers;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -99,4 +103,20 @@ public class ProductController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    @GetMapping("/search/{keyword}")
+    public ResponseEntity<?> searchVariants(@PathVariable("keyword") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "30") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir)
+            throws Exception {
+
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Product> variants = productService.searchProducts(keyword, pageable);
+        Page<ProductRespone> responsePage = variants.map(ProductRespone::fromProduct);
+        return ResponseEntity.ok(ApiResponse.ok(responsePage));
+    }
+
 }

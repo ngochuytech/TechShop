@@ -4,6 +4,9 @@ import com.project.techstore.dtos.product.ProductDTO;
 import com.project.techstore.dtos.product.ProductFilterDTO;
 import com.project.techstore.models.Product;
 import com.project.techstore.responses.product.ProductRespone;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -22,7 +25,7 @@ public interface IProductService {
 
     ProductRespone getProductById(String productId) throws Exception;
 
-    Product createProduct(ProductDTO productDTO, List<MultipartFile> files) throws Exception;
+    Product createProduct(ProductDTO productDTO, List<MultipartFile> files, Integer primaryImageIndex) throws Exception;
 
     Product updateProduct(String id, ProductDTO productDTO) throws Exception;
 
@@ -30,4 +33,5 @@ public interface IProductService {
     
     List<ProductRespone> getSimilarProducts(String productId, int limit) throws Exception;
 
+    Page<Product> searchProducts(String keyword, Pageable pageable) throws Exception;
 }

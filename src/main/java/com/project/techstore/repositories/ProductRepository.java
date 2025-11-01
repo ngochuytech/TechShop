@@ -2,6 +2,7 @@ package com.project.techstore.repositories;
 
 import com.project.techstore.models.Product;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +22,8 @@ public interface ProductRepository extends JpaRepository<Product, String> {
             String categoryName,
             String brandName
     );
+
+    Page<Product> findByNameContaining(String keyword, Pageable pageable);
 
     void deleteByProductModelId(Long productModelId);
     

@@ -1,10 +1,11 @@
 package com.project.techstore.services.product;
 
-import com.project.techstore.dtos.product.ProductVariantDTO;
-import com.project.techstore.models.ProductVariant;
+import java.util.List;
+
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
+import com.project.techstore.dtos.product.ProductVariantDTO;
+import com.project.techstore.models.ProductVariant;
 
 public interface IProductVariantService {
     ProductVariant createVariant(ProductVariantDTO productVariantDTO, MultipartFile image) throws Exception;

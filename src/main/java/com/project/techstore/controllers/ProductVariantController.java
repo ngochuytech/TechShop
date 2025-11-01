@@ -18,28 +18,20 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("${api.prefix}/product-variants")
 @RequiredArgsConstructor
 public class ProductVariantController {
-    
+
     private final IProductVariantService productVariantService;
-    
+
     @GetMapping("/product/{productId}")
-    public ResponseEntity<?> getVariantsByProductId(@PathVariable("productId") String productId) {
-        try {
-            List<ProductVariant> variants = productVariantService.getVariantsByProductId(productId);
-            return ResponseEntity.ok(ApiResponse.ok(variants));
-            
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
+    public ResponseEntity<?> getVariantsByProductId(@PathVariable("productId") String productId) throws Exception {
+        List<ProductVariant> variants = productVariantService.getVariantsByProductId(productId);
+        return ResponseEntity.ok(ApiResponse.ok(variants));
+
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<?> getVariantById(@PathVariable("id") String variantId) {
-        try {
-            ProductVariant variant = productVariantService.getVariantById(variantId);
-            return ResponseEntity.ok(ApiResponse.ok(variant));
-            
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
+    public ResponseEntity<?> getVariantById(@PathVariable("id") String variantId) throws Exception {
+        ProductVariant variant = productVariantService.getVariantById(variantId);
+        return ResponseEntity.ok(ApiResponse.ok(variant));
+
     }
 }
