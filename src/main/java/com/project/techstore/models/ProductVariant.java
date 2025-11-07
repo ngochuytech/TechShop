@@ -30,4 +30,7 @@ public class ProductVariant {
     private Long price;
 
     private String image;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted;
 }

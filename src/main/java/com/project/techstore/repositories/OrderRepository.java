@@ -16,9 +16,7 @@ public interface OrderRepository extends JpaRepository<Order, String> {
     
     @EntityGraph(attributePaths = {"orderItems"})
     Optional<Order> findById(String id);
-    /**
-     * Đếm số đơn hàng của user theo status
-     */
+
     long countByUserAndStatus(User user, String status);
     
     /**

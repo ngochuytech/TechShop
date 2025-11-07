@@ -1,13 +1,8 @@
 package com.project.techstore.services.product;
 
-import com.project.techstore.dtos.product.ProductDTO;
-import com.project.techstore.dtos.product.ProductFilterDTO;
-import com.project.techstore.exceptions.DataNotFoundException;
-import com.project.techstore.models.*;
-import com.project.techstore.repositories.*;
-import com.project.techstore.responses.product.ProductRespone;
-import com.project.techstore.services.CloudinaryService;
-import lombok.RequiredArgsConstructor;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,19 +10,32 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import com.project.techstore.dtos.product.ProductDTO;
+import com.project.techstore.dtos.product.ProductFilterDTO;
+import com.project.techstore.exceptions.DataNotFoundException;
+import com.project.techstore.models.Attribute;
+import com.project.techstore.models.Media;
+import com.project.techstore.models.Product;
+import com.project.techstore.models.ProductAttribute;
+import com.project.techstore.models.ProductModel;
+import com.project.techstore.models.ProductVariant;
+import com.project.techstore.repositories.AttributeRepository;
+import com.project.techstore.repositories.CategoryRepository;
+import com.project.techstore.repositories.MediaRepository;
+import com.project.techstore.repositories.ProductAttributeRepository;
+import com.project.techstore.repositories.ProductModelRepository;
+import com.project.techstore.repositories.ProductRepository;
+import com.project.techstore.repositories.ProductRepositoryCustom;
+import com.project.techstore.repositories.ProductVariantRepository;
+import com.project.techstore.responses.product.ProductRespone;
+import com.project.techstore.services.CloudinaryService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class ProductService implements IProductService {
     private final ProductRepository productRepository;
-    @Override
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
-    }
 
     private final ProductRepositoryCustom productRepositoryCustom;
 
@@ -42,22 +50,27 @@ public class ProductService implements IProductService {
     private final ProductAttributeRepository productAttributeRepository;
 
     private final ProductVariantRepository productVariantRepository;
-    
+
     private final CloudinaryService cloudinaryService;
 
     @Override
-    public List<Product> getProductByProductModel(Long productModelId) throws Exception{
-        if(!productModelRepository.existsById(productModelId))
+    public List<Product> getAllProducts() {
+        return productRepository.findAll();
+    }
+
+    @Override
+    public List<Product> getProductByProductModel(Long productModelId) throws Exception {
+        if (!productModelRepository.existsById(productModelId))
             throw new DataNotFoundException("This product model doesn't exist");
         return productRepository.findByProductModelId(productModelId);
     }
 
     @Override
     public List<ProductRespone> getProductByCategory(Long categoryId) throws Exception {
-        if(!categoryRepository.existsById(categoryId))
+        if (!categoryRepository.existsById(categoryId))
             throw new DataNotFoundException("Category doesn't exist");
         List<Product> productList = productRepository.findByProductModel_CategoryId(categoryId);
-      return productList.stream().map(product -> ProductRespone.fromProduct(product)).toList();
+        return productList.stream().map(product -> ProductRespone.fromProduct(product)).toList();
     }
 
     @Override
@@ -69,8 +82,9 @@ public class ProductService implements IProductService {
 
     @Override
     public List<ProductRespone> getProductByCategoryAndBrand(String category, String brand) throws Exception {
-       List<Product> productList = productRepository.findByProductModel_Category_NameAndProductModel_Brand_Name(category, brand);
-       return productList.stream().map(product -> ProductRespone.fromProduct(product)).toList();
+        List<Product> productList = productRepository
+                .findByProductModel_Category_NameAndProductModel_Brand_Name(category, brand);
+        return productList.stream().map(product -> ProductRespone.fromProduct(product)).toList();
     }
 
     @Override
@@ -92,10 +106,10 @@ public class ProductService implements IProductService {
         return ProductRespone.fromProduct(product);
     }
 
-
     @Override
     @Transactional
-    public Product createProduct(ProductDTO productDTO, List<MultipartFile> images, Integer primaryImageIndex) throws Exception {
+    public Product createProduct(ProductDTO productDTO, List<MultipartFile> images, Integer primaryImageIndex)
+            throws Exception {
         ProductModel productModel = productModelRepository.findById(productDTO.getProductModelId())
                 .orElseThrow(() -> new DataNotFoundException("This product model doesn't exist"));
         Product product = Product.builder()
@@ -104,6 +118,7 @@ public class ProductService implements IProductService {
                 .description(productDTO.getDescription())
                 .price(productDTO.getPrice())
                 .stock(productDTO.getStock())
+                .isDeleted(false)
                 .productModel(productModel)
                 .mediaList(new ArrayList<>())
                 .build();
@@ -113,13 +128,12 @@ public class ProductService implements IProductService {
         if (images != null && !images.isEmpty()) {
             // Kiểm tra primaryImageIndex hợp lệ
             if (primaryImageIndex == null || primaryImageIndex < 0 || primaryImageIndex >= images.size()) {
-                primaryImageIndex = 0; // Mặc định là ảnh đầu tiên nếu không hợp lệ
+                primaryImageIndex = 0;
             }
-            
+
             for (int i = 0; i < images.size(); i++) {
                 MultipartFile file = images.get(i);
                 if (!file.isEmpty()) {
-                    // Upload lên Cloudinary
                     String imageUrl = cloudinaryService.uploadProductImage(file, product.getId());
 
                     Media media = new Media();
@@ -135,8 +149,8 @@ public class ProductService implements IProductService {
             productRepository.save(product);
 
             Map<String, String> attributeMaps = productDTO.getAttributes();
-            if(attributeMaps != null){
-                for(Map.Entry<String, String> entry : attributeMaps.entrySet()){
+            if (attributeMaps != null) {
+                for (Map.Entry<String, String> entry : attributeMaps.entrySet()) {
                     String attrName = entry.getKey();
                     String value = entry.getValue();
 
@@ -160,6 +174,7 @@ public class ProductService implements IProductService {
     }
 
     @Override
+    @Transactional
     public Product updateProduct(String id, ProductDTO productDTO) throws Exception {
         Product productExisting = productRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("This product doesn't exist"));
@@ -169,87 +184,104 @@ public class ProductService implements IProductService {
         productExisting.setConfigurationSummary(productDTO.getConfigurationSummary());
         productExisting.setProductModel(productModel);
         productExisting.setDescription(productDTO.getDescription());
+        Map<String, String> attributeMaps = productDTO.getAttributes();
+        if (attributeMaps != null) {
+            productAttributeRepository.deleteByProductId(id);
+
+            for (Map.Entry<String, String> entry : attributeMaps.entrySet()) {
+                String attrName = entry.getKey();
+                String value = entry.getValue();
+
+                Attribute attribute = attributeRepository.findByName(attrName)
+                        .orElseGet(() -> {
+                            Attribute newAttr = new Attribute();
+                            newAttr.setName(attrName);
+                            return attributeRepository.save(newAttr);
+                        });
+
+                ProductAttribute productAttribute = ProductAttribute.builder()
+                        .product(productExisting)
+                        .attribute(attribute)
+                        .value(value)
+                        .build();
+                productAttributeRepository.save(productAttribute);
+            }
+        }
+
+        if (productExisting.getVariants() == null || productExisting.getVariants().isEmpty()) {
+            productExisting.setPrice(productDTO.getPrice());
+            productExisting.setStock(productDTO.getStock());
+        }
         return productRepository.save(productExisting);
     }
 
     @Override
     public void deleteProduct(String id) throws Exception {
-        // Kiểm tra sản phẩm có tồn tại không
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("This product doesn't exist"));
 
-        // Xóa ảnh từ Cloudinary
-        List<Media> mediaList = product.getMediaList();
-        if (mediaList != null && !mediaList.isEmpty()) {
-            for (Media media : mediaList) {
-                try {
-                    cloudinaryService.deleteImageByUrl(media.getMediaPath());
-                } catch (IOException e) {
-                    // Log lỗi nhưng không làm gián đoạn xóa database
-                    System.err.println("Failed to delete image from Cloudinary: " + media.getMediaPath() + ", error: " + e.getMessage());
-                }
-            }
-        }
-
-        productRepository.deleteById(id);
+        product.setDeleted(true);
+        productRepository.save(product);
     }
-    
+
     @Override
     public List<ProductRespone> getSimilarProducts(String productId, int limit) throws Exception {
         // Tìm sản phẩm hiện tại
         Product currentProduct = productRepository.findById(productId)
                 .orElseThrow(() -> new DataNotFoundException("Product not found"));
-        
+
         // Lấy thông tin category và brand từ sản phẩm hiện tại
-        Long categoryId = currentProduct.getProductModel() != null ? 
-                currentProduct.getProductModel().getCategory().getId() : null;
-                
+        Long categoryId = currentProduct.getProductModel() != null
+                ? currentProduct.getProductModel().getCategory().getId()
+                : null;
+
         // Nếu không có category, không thể tìm sản phẩm tương tự
         if (categoryId == null) {
             return List.of();
         }
-        
+
         // Tìm các sản phẩm trong cùng category, nhưng không bao gồm sản phẩm hiện tại
         List<Product> similarProducts = productRepository.findBySimilarCategoryAndDifferentId(
                 categoryId, productId, limit);
-        
+
         // Convert sang ProductRespone và trả về, giới hạn theo limit
         return similarProducts.stream()
                 .limit(limit)
                 .map(product -> ProductRespone.fromProduct(product))
                 .toList();
     }
-    
+
     /**
      * Cập nhật price và stock của Product dựa trên các ProductVariant
      * - Price = giá thấp nhất của các variant
      * - Stock = tổng stock của các variant
      */
     @Transactional
-    public void updateProductPriceAndStockFromVariants(String productId) {
+    private void updateProductPriceAndStockFromVariants(String productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
-        
-        List<ProductVariant> variants = productVariantRepository.findByProductId(productId);
-        
+
+        List<ProductVariant> variants = productVariantRepository.findByProductIdAndIsDeletedFalse(productId);
+
         if (variants.isEmpty()) {
             // Nếu không có variant nào, giữ nguyên price và stock hiện tại
             return;
         }
-        
-        // Tính price = giá thấp nhất của các variant (chỉ tính variant có price khác null)
+
+        // Tính price = giá thấp nhất của các variant (chỉ tính variant có price khác
+        // null)
         Long minPrice = variants.stream()
                 .filter(variant -> variant.getPrice() != null)
                 .mapToLong(ProductVariant::getPrice)
                 .min()
                 .orElse(product.getPrice() != null ? product.getPrice() : 0L);
-        
+
         // Tính stock = tổng stock của các variant
         Integer totalStock = variants.stream()
                 .filter(variant -> variant.getStock() != null)
                 .mapToInt(ProductVariant::getStock)
                 .sum();
-        
+
         // Cập nhật product
         product.setPrice(minPrice);
         product.setStock(totalStock);
@@ -260,5 +292,51 @@ public class ProductService implements IProductService {
     public Page<Product> searchProducts(String keyword, Pageable pageable) throws Exception {
         Page<Product> productsPage = productRepository.findByNameContaining(keyword, pageable);
         return productsPage;
+    }
+
+    @Override
+    public Page<Product> getAllProductWithoutDeleted(String search, Long productModelId, Pageable pageable)
+            throws Exception {
+        return productRepository.findByFilters(search, productModelId, pageable);
+    }
+
+    @Override
+    @Transactional
+    public void updateProductImages(String productId, List<MultipartFile> images, Integer primaryImageIndex)
+            throws Exception {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new DataNotFoundException("This product doesn't exist"));
+
+        if (images != null && !images.isEmpty()) {
+            // Xóa hình ảnh cũ
+            mediaRepository.deleteByProductId(productId);
+            mediaRepository.flush();
+            product.getMediaList().clear();
+
+            // Kiểm tra primaryImageIndex hợp lệ
+            if (primaryImageIndex == null || primaryImageIndex < 0 || primaryImageIndex >= images.size()) {
+                primaryImageIndex = 0;
+            }
+
+            List<Media> newMediaList = new ArrayList<>();
+            for (int i = 0; i < images.size(); i++) {
+                MultipartFile file = images.get(i);
+                if (!file.isEmpty()) {
+                    // Upload lên Cloudinary
+                    String imageUrl = cloudinaryService.uploadProductImage(file, product.getId());
+
+                    Media media = new Media();
+                    media.setMediaPath(imageUrl);
+                    media.setMediaType(file.getContentType());
+                    media.setIsPrimary(i == primaryImageIndex);
+                    media.setProduct(product);
+
+                    product.getMediaList().add(media);
+                    newMediaList.add(media);
+                }
+            }
+            mediaRepository.saveAll(newMediaList);
+            productRepository.save(product);
+        }
     }
 }

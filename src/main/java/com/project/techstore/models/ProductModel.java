@@ -31,6 +31,9 @@ public class ProductModel extends BaseEntity{
     @JoinColumn(name = "brand_id")
     private Brand brand;
 
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted;
+
     @OneToMany(mappedBy = "productModel", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Product> products;
 }

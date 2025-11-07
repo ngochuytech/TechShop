@@ -7,9 +7,7 @@ import com.project.techstore.models.User;
 import com.project.techstore.repositories.NotificationRepository;
 import com.project.techstore.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,8 +19,6 @@ public class NotificationService implements INotificationService{
     private final UserRepository userRepository;
 
     private final NotificationRepository notificationRepository;
-
-    private final ModelMapper modelMapper;
 
     @Override
     public Notification createNotification(NotificationDTO notificationDTO) throws Exception {

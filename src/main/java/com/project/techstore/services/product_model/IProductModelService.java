@@ -1,12 +1,15 @@
-package com.project.techstore.services;
+package com.project.techstore.services.product_model;
 
 import com.project.techstore.dtos.product.ProductModelDTO;
 import com.project.techstore.models.ProductModel;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 public interface IProductModelService {
-    List<ProductModel> getAllProductModels() throws Exception;
+    Page<ProductModel> getAllProductModelsWithoutDeleted(String search, Long categoryId, Long brandId, Pageable pageable) throws Exception;
 
     List<ProductModel> getProductModelByCategory(Long categoryId) throws Exception;
 

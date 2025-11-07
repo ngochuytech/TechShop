@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.project.techstore.models.ProductVariant;
 import com.project.techstore.responses.ApiResponse;
-import com.project.techstore.services.product.IProductVariantService;
+import com.project.techstore.services.product_variant.IProductVariantService;
 
 import lombok.RequiredArgsConstructor;
 

@@ -13,6 +13,9 @@ import java.util.List;
 
 public interface IProductService {
     List<Product> getAllProducts() throws Exception;
+
+    Page<Product> getAllProductWithoutDeleted(String search, Long productModelId, Pageable pageable) throws Exception;
+
     List<Product> getProductByProductModel(Long productModelId) throws Exception;
 
     List<ProductRespone> getProductByCategory(Long categoryId) throws Exception;
@@ -29,8 +32,10 @@ public interface IProductService {
 
     Product updateProduct(String id, ProductDTO productDTO) throws Exception;
 
+    void updateProductImages(String productId, List<MultipartFile> images, Integer primaryImageIndex) throws Exception;
+
     void deleteProduct(String id) throws Exception;
-    
+
     List<ProductRespone> getSimilarProducts(String productId, int limit) throws Exception;
 
     Page<Product> searchProducts(String keyword, Pageable pageable) throws Exception;

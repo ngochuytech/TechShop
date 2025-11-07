@@ -1,7 +1,9 @@
-package com.project.techstore.services.product;
+package com.project.techstore.services.product_variant;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,7 +34,7 @@ public class ProductVariantService implements IProductVariantService {
                 .orElseThrow(() -> new DataNotFoundException("Product not found with ID: " + productVariantDTO.getProductId()));
         
         // Kiểm tra xem màu này đã tồn tại cho sản phẩm này chưa
-        List<ProductVariant> existingVariants = productVariantRepository.findByProductId(productVariantDTO.getProductId());
+        List<ProductVariant> existingVariants = productVariantRepository.findByProductIdAndIsDeletedFalse(productVariantDTO.getProductId());
         boolean colorExists = existingVariants.stream()
                 .anyMatch(variant -> variant.getColor().equalsIgnoreCase(productVariantDTO.getColor()));
         
@@ -47,6 +49,7 @@ public class ProductVariantService implements IProductVariantService {
                 .stock(productVariantDTO.getStock())
                 .price(productVariantDTO.getPrice()) // Có thể null
                 .image("") // Sẽ cập nhật sau khi upload
+                .isDeleted(false)
                 .build();
         
         // Save variant trước để có ID
@@ -70,7 +73,7 @@ public class ProductVariantService implements IProductVariantService {
     
     @Override
     @Transactional
-    public ProductVariant updateVariant(String variantId, ProductVariantDTO productVariantDTO) throws Exception {
+    public ProductVariant updateVariant(String variantId, ProductVariantDTO productVariantDTO, MultipartFile file) throws Exception {
         ProductVariant existingVariant = productVariantRepository.findById(variantId)
                 .orElseThrow(() -> new DataNotFoundException("Product variant not found with ID: " + variantId));
         
@@ -78,13 +81,15 @@ public class ProductVariantService implements IProductVariantService {
         existingVariant.setColor(productVariantDTO.getColor());
         existingVariant.setStock(productVariantDTO.getStock());
         existingVariant.setPrice(productVariantDTO.getPrice());
-        
-        ProductVariant updatedVariant = productVariantRepository.save(existingVariant);
+        if(file != null && !file.isEmpty()) {
+            String imageUrl = cloudinaryService.uploadVariantImage(file, existingVariant.getId());
+            existingVariant.setImage(imageUrl);
+        }
         
         // Cập nhật price và stock của Product parent dựa trên variants
         updateProductPriceAndStockFromVariants(existingVariant.getProduct().getId());
         
-        return updatedVariant;
+        return productVariantRepository.save(existingVariant);
     }
     
     @Override
@@ -94,18 +99,8 @@ public class ProductVariantService implements IProductVariantService {
                 .orElseThrow(() -> new DataNotFoundException("Product variant not found with ID: " + variantId));
         
         String productId = variant.getProduct().getId();
-        
-        // Xóa ảnh từ Cloudinary nếu có
-        if (variant.getImage() != null && !variant.getImage().isEmpty()) {
-            try {
-                cloudinaryService.deleteImageByUrl(variant.getImage());
-            } catch (Exception e) {
-                // Log lỗi nhưng không làm gián đoạn xóa database
-                System.err.println("Failed to delete variant image from Cloudinary: " + variant.getImage() + ", error: " + e.getMessage());
-            }
-        }
-        
-        productVariantRepository.deleteById(variantId);
+    
+        variant.setDeleted(true);
         
         // Cập nhật price và stock của Product parent dựa trên variants còn lại
         updateProductPriceAndStockFromVariants(productId);
@@ -116,7 +111,7 @@ public class ProductVariantService implements IProductVariantService {
         if (!productRepository.existsById(productId)) {
             throw new DataNotFoundException("Product not found with ID: " + productId);
         }
-        return productVariantRepository.findByProductId(productId);
+        return productVariantRepository.findByProductIdAndIsDeletedFalse(productId);
     }
     
     @Override
@@ -129,11 +124,11 @@ public class ProductVariantService implements IProductVariantService {
      * Cập nhật price và stock của Product dựa trên các ProductVariant
      */
     @Transactional
-    public void updateProductPriceAndStockFromVariants(String productId) {
+    private void updateProductPriceAndStockFromVariants(String productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
         
-        List<ProductVariant> variants = productVariantRepository.findByProductId(productId);
+        List<ProductVariant> variants = productVariantRepository.findByProductIdAndIsDeletedFalse(productId);
         
         if (variants.isEmpty()) {
             // Nếu không có variant nào, giữ nguyên price và stock hiện tại
@@ -156,5 +151,13 @@ public class ProductVariantService implements IProductVariantService {
         product.setPrice(minPrice);
         product.setStock(totalStock);
         productRepository.save(product);
+    }
+
+    @Override
+    public Page<ProductVariant> getVariantsByProductId(String productId, Pageable pageable) throws Exception {
+        if (!productRepository.existsById(productId)) {
+            throw new DataNotFoundException("Product not found with ID: " + productId);
+        }
+        return productVariantRepository.findByProductIdAndIsDeletedFalse(productId, pageable);
     }
 }

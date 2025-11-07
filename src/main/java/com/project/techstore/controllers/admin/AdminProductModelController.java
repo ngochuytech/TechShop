@@ -1,13 +1,18 @@
 package com.project.techstore.controllers.admin;
 
-
 import com.project.techstore.dtos.product.ProductModelDTO;
 import com.project.techstore.models.ProductModel;
 import com.project.techstore.responses.ApiResponse;
 import com.project.techstore.responses.product.ProductModelResponse;
-import com.project.techstore.services.IProductModelService;
+import com.project.techstore.services.product_model.IProductModelService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -17,26 +22,41 @@ import java.util.List;
 
 @RestController
 @RequestMapping("${api.prefix}/admin/product-models")
-@RequiredArgsConstructor
+@RequiredArgsConstructor    
 public class AdminProductModelController {
 
     private final IProductModelService productModelService;
 
     @GetMapping("")
-    public ResponseEntity<?> getAllProductModels() {
-        try {
-            List<ProductModel> productModels = productModelService.getAllProductModels();
-            List<ProductModelResponse> responses = productModels.stream()
-                    .map(ProductModelResponse::fromProductModel)
-                    .toList();
-            return ResponseEntity.ok(ApiResponse.ok(responses));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<?> getAllProductModels(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long brandId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir)
+            throws Exception {
+
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<ProductModel> productModels = productModelService.getAllProductModelsWithoutDeleted(search, categoryId, brandId,pageable);
+        Page<ProductModelResponse> responses = productModels.map(ProductModelResponse::fromProductModel);
+        return ResponseEntity.ok(ApiResponse.ok(responses));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchProductModels(@RequestParam(required = false, value = "q") String query) throws Exception {
+        Page<ProductModel> productModels = productModelService.getAllProductModelsWithoutDeleted(query, null, null,
+                Pageable.unpaged());
+        List<ProductModelResponse> responses = productModels.stream()
+                .map(ProductModelResponse::fromProductModel)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.ok(responses));
     }
 
     @GetMapping("/category/{id}")
-    public ResponseEntity<?> getProductModelByCategory(@PathVariable("id") Long categoryId){
+    public ResponseEntity<?> getProductModelByCategory(@PathVariable("id") Long categoryId) {
         try {
             List<ProductModel> productModelList = productModelService.getProductModelByCategory(categoryId);
             List<ProductModelResponse> responses = productModelList.stream()
@@ -49,7 +69,7 @@ public class AdminProductModelController {
     }
 
     @GetMapping("/brand/{id}")
-    public ResponseEntity<?> getProductModelByBrand(@PathVariable("id") Long brandId){
+    public ResponseEntity<?> getProductModelByBrand(@PathVariable("id") Long brandId) {
         try {
             List<ProductModel> productModelList = productModelService.getProductModelByBrand(brandId);
             List<ProductModelResponse> responses = productModelList.stream()
@@ -62,9 +82,10 @@ public class AdminProductModelController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<?> createProductModel(@RequestBody @Valid ProductModelDTO productModelDTO, BindingResult result){
-        try{
-            if(result.hasErrors()){
+    public ResponseEntity<?> createProductModel(@RequestBody @Valid ProductModelDTO productModelDTO,
+            BindingResult result) {
+        try {
+            if (result.hasErrors()) {
                 List<String> errorMessages = result.getFieldErrors()
                         .stream()
                         .map(FieldError::getDefaultMessage)
@@ -79,10 +100,11 @@ public class AdminProductModelController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<?> updateProductModel(@PathVariable("id") Long id, @RequestBody @Valid ProductModelDTO productModelDTO,
-                                                BindingResult result){
-        try{
-            if(result.hasErrors()){
+    public ResponseEntity<?> updateProductModel(@PathVariable("id") Long id,
+            @RequestBody @Valid ProductModelDTO productModelDTO,
+            BindingResult result) {
+        try {
+            if (result.hasErrors()) {
                 List<String> errorMessages = result.getFieldErrors()
                         .stream()
                         .map(FieldError::getDefaultMessage)
@@ -97,7 +119,7 @@ public class AdminProductModelController {
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> deleteProductModel(@PathVariable("id") Long id){
+    public ResponseEntity<?> deleteProductModel(@PathVariable("id") Long id) {
         try {
             productModelService.deleteProductModel(id);
             return ResponseEntity.ok("Delete a product model successful");

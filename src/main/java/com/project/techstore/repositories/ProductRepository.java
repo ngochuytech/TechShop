@@ -49,4 +49,9 @@ public interface ProductRepository extends JpaRepository<Product, String> {
         @Param("currentProductId") String currentProductId,
         Pageable pageable
     );
+
+    @Query("SELECT p FROM Product p WHERE p.isDeleted = false " +
+           "AND (:search IS NULL OR :search = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+           "AND (:productModelId IS NULL OR p.productModel.id = :productModelId)")
+    Page<Product> findByFilters(String search, Long productModelId, Pageable pageable);
 }

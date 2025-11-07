@@ -29,6 +29,9 @@ public class Product extends BaseEntity{
 
     private String description;
 
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted;
+
     @ManyToOne
     @JoinColumn(name = "product_model_id")
     private ProductModel productModel;

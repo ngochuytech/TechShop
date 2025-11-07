@@ -40,8 +40,7 @@ public class ProductRespone {
         @JsonProperty("configuration_summary")
         private String configurationSummary;
 
-        @JsonProperty("product_model_id")
-        private Long productModelId;
+        private ProductModelResponse productModel;
 
         private Double averageRating;
 
@@ -69,6 +68,8 @@ public class ProductRespone {
                         }
                 });
 
+                ProductModelResponse productModelResponse = ProductModelResponse.fromProductModel(product.getProductModel());
+
                 // Tính số sao trung bình từ reviews
                 Double averageRating = null;
                 Integer reviewCount = 0;
@@ -94,7 +95,7 @@ public class ProductRespone {
                                 .colors(colorResponses)
                                 .attributes(attributes)
                                 .promotion("") // Chưa xử lý
-                                .productModelId(product.getProductModel().getId())
+                                .productModel(productModelResponse)
                                 .averageRating(averageRating)
                                 .reviewCount(reviewCount)
                                 .build();
