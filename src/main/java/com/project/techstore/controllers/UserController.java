@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.project.techstore.components.JwtTokenProvider;
 import com.project.techstore.dtos.GoogleCodeRequest;
 import com.project.techstore.dtos.UserLoginDTO;
+import com.project.techstore.dtos.user.ChangePasswordDTO;
 import com.project.techstore.dtos.user.UpdateProfileDTO;
 import com.project.techstore.dtos.user.UserDTO;
 import com.project.techstore.models.Token;
@@ -79,7 +80,6 @@ public class UserController {
             }
             if (!userDTO.getPassword().equals(userDTO.getRetypePassword()))
                 return ResponseEntity.badRequest().body(ApiResponse.error("Password doesn't match"));
-            // CẦN KIỂM TRA USER ĐÃ XÁC MINH EMAIL CHƯA !!
             userService.createUser(userDTO);
             return ResponseEntity.ok(ApiResponse.ok("Đã nhập thông tin thành công. Cần xác nhận email!"));
         } catch (Exception e) {
@@ -102,7 +102,6 @@ public class UserController {
         User user = userService.getUserByToken(token);
         Token jwtToken = tokenService.addToken(user, token);
 
-        // Lưu refreshToken vào HttpOnly Cookie
         Cookie refreshTokenCookie = new Cookie("refreshToken", jwtToken.getRefreshToken());
         refreshTokenCookie.setHttpOnly(true);
         refreshTokenCookie.setSecure(false);
@@ -144,7 +143,6 @@ public class UserController {
         User user = userService.getUserById(tokenEntity.getUser().getId());
         Token newToken = tokenService.refreshToken(refreshToken, user);
 
-        // Cập nhật refreshToken cookie (optional - nếu muốn rotate refreshToken)
         Cookie refreshTokenCookie = new Cookie("refreshToken", newToken.getRefreshToken());
         refreshTokenCookie.setHttpOnly(true);
         refreshTokenCookie.setSecure(false);
@@ -152,7 +150,43 @@ public class UserController {
         refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60);
         response.addCookie(refreshTokenCookie);
 
-        return ResponseEntity.ok(ApiResponse.ok(newToken.getToken()));
+        LoginResponse loginResponse = LoginResponse.builder()
+                .message("Làm mới token thành công!")
+                .token(newToken.getToken())
+                .tokenType(newToken.getTokenType())
+                .username(user.getFullName())
+                .roles(user.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList())
+                .id(user.getId())
+                .build();
+
+        return ResponseEntity.ok(ApiResponse.ok(loginResponse));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request,
+            HttpServletResponse response) throws Exception {
+        String refreshToken = Arrays.stream(request.getCookies())
+                .filter(cookie -> "refreshToken".equals(cookie.getName()))
+                .findFirst()
+                .map(Cookie::getValue)
+                .orElse(null);
+
+        if (refreshToken != null) {
+            try {
+                tokenService.revokeToken(refreshToken);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            }
+        }
+
+        Cookie deleteCookie = new Cookie("refreshToken", null);
+        deleteCookie.setHttpOnly(true);
+        deleteCookie.setSecure(false);
+        deleteCookie.setPath("/");
+        deleteCookie.setMaxAge(0);
+        response.addCookie(deleteCookie);
+
+        return ResponseEntity.ok(ApiResponse.ok("Đăng xuất thành công"));
     }
 
     @PutMapping("/update-profile")
@@ -211,6 +245,33 @@ public class UserController {
         return ResponseEntity.ok("Update avatar successfully");
     }
 
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(@AuthenticationPrincipal User user,
+            @RequestBody @Valid ChangePasswordDTO changePasswordDTO,
+            BindingResult result) {
+        try {
+            if (result.hasErrors()) {
+                List<String> errorMessages = result.getFieldErrors()
+                        .stream()
+                        .map(FieldError::getDefaultMessage)
+                        .toList();
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse<>(false, null, String.join(", ", errorMessages)));
+            }
+            
+            if (!changePasswordDTO.getNewPassword().equals(changePasswordDTO.getConfirmPassword())) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Mật khẩu xác nhận không khớp"));
+            }
+            
+            userService.changePassword(user, changePasswordDTO.getCurrentPassword(), 
+                    changePasswordDTO.getNewPassword());
+            return ResponseEntity.ok(ApiResponse.ok("Đổi mật khẩu thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     @GetMapping("/auth/social-login")
     public void socialAuth(HttpServletResponse response) throws IOException {
         String url = googleAuthService.generateAuthUrl();
@@ -230,10 +291,9 @@ public class UserController {
             String token = jwtTokenProvider.generateToken(user);
             Token jwtToken = tokenService.addToken(user, token);
 
-            // Lưu refreshToken vào HttpOnly Cookie
             Cookie refreshTokenCookie = new Cookie("refreshToken", jwtToken.getRefreshToken());
             refreshTokenCookie.setHttpOnly(true);
-            refreshTokenCookie.setSecure(false); // Set true nếu dùng HTTPS
+            refreshTokenCookie.setSecure(false);
             refreshTokenCookie.setPath("/");
             refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60);
             response.addCookie(refreshTokenCookie);
@@ -242,7 +302,6 @@ public class UserController {
                     .message("Đăng nhập thành công!")
                     .token(jwtToken.getToken())
                     .tokenType(jwtToken.getTokenType())
-                    .refreshToken(null) // Không trả về refreshToken trong response
                     .username(user.getFullName())
                     .roles(user.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList())
                     .id(user.getId())

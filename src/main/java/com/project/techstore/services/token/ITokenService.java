@@ -8,6 +8,8 @@ public interface ITokenService {
 
     Token refreshToken(String refreshToken, User user) throws Exception;
 
+    void revokeToken(String refreshToken) throws Exception;
+
     Token findByRefreshToken(String refreshToken);
 
     Token save(Token token);

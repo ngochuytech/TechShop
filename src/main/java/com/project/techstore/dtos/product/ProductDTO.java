@@ -27,6 +27,7 @@ public class ProductDTO {
     private Map<String, String> attributes;
 
     @JsonProperty("product_model_id")
+    @NotNull(message = "Product model ID is required")
     private Long productModelId;
 
     @NotBlank(message = "Description is required")

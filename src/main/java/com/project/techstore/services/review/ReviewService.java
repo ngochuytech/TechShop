@@ -65,7 +65,7 @@ public class ReviewService implements IReviewService {
     public Review updateReview(String id, ReviewDTO reviewDTO) throws Exception {
         Review reviewExisting = reviewRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("This review doesn't exist"));
-        // (OWNERSHIP) Cần check phải user chính chủ mới update review của họ được
+
         reviewExisting.setRating(reviewDTO.getRating());
         reviewExisting.setComment(reviewDTO.getComment());
         return reviewRepository.save(reviewExisting);
@@ -100,5 +100,10 @@ public class ReviewService implements IReviewService {
             starCount.put(star, count);
         }
         return starCount;
+    }
+
+    @Override
+    public List<Review> getRecentReviews(int limit) throws Exception {
+        return reviewRepository.getRecentReviews(limit);
     }
 }

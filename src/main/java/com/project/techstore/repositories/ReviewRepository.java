@@ -11,6 +11,10 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface ReviewRepository extends JpaRepository<Review, String> {
+
+    @Query(value = "SELECT * FROM Reviews r ORDER BY r.created_at DESC LIMIT :limit", nativeQuery = true)
+    List<Review> getRecentReviews(@Param("limit") int limit);
+
     List<Review> findByUserId(String userId);
 
     List<Review> findByProductId(String productId);
@@ -21,4 +25,10 @@ public interface ReviewRepository extends JpaRepository<Review, String> {
     Page<Review> findByProductId(String productId, Pageable pageable);
 
     Page<Review> findByProductIdAndRating(String productId, int rating, Pageable pageable);
+
+    @Query("SELECT AVG(r.rating) FROM Review r")
+    Double findAverageRating();
+
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.product.id = :productId")
+    Double findAverageRatingByProductId(@Param("productId") String productId);
 }

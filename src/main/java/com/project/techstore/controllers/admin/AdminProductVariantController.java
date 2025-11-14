@@ -53,7 +53,6 @@ public class AdminProductVariantController {
     public ResponseEntity<?> createVariant(@RequestPart @Valid ProductVariantDTO productVariantDTO,
             @RequestPart(value = "image", required = false) MultipartFile image,
             BindingResult result) throws Exception {
-        // Kiểm tra validation errors
         if (result.hasErrors()) {
             List<String> errorMessages = result.getFieldErrors()
                     .stream()
@@ -71,7 +70,6 @@ public class AdminProductVariantController {
             @Valid @RequestPart("productVariantDTO") ProductVariantDTO productVariantDTO,
             @RequestPart(value = "image", required = false) MultipartFile image,
             BindingResult result) throws Exception {
-        // Kiểm tra validation errors
         if (result.hasErrors()) {
             List<String> errorMessages = result.getFieldErrors()
                     .stream()

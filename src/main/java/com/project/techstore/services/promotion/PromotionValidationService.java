@@ -3,7 +3,6 @@ package com.project.techstore.services.promotion;
 import com.project.techstore.exceptions.InvalidParamException;
 import com.project.techstore.models.Promotion;
 import com.project.techstore.models.User;
-import com.project.techstore.repositories.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +12,6 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class PromotionValidationService {
     private final UserPromotionUsageService userPromotionUsageService;
-    private final OrderRepository orderRepository;
 
     /**
      * Validate xem user có thể sử dụng promotion này không
@@ -35,9 +33,9 @@ public class PromotionValidationService {
 
         // 3. Kiểm tra promotion chỉ dành cho khách hàng mới
         if (promotion.getIsForNewCustomer() != null && promotion.getIsForNewCustomer()) {
-            long completedOrderCount = orderRepository.countByUserAndStatus(user, "DELIVERED");
-            if (completedOrderCount > 0) {
-                throw new InvalidParamException("Mã khuyến mãi chỉ dành cho khách hàng mới");
+            long userUsageCount = userPromotionUsageService.countUserUsage(user, promotion);
+            if (userUsageCount > 0) {
+                throw new InvalidParamException("Bạn đã sử dụng mã khuyến mãi này rồi");
             }
         }
 

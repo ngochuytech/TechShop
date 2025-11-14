@@ -14,6 +14,8 @@ public interface ProductModelRepository extends JpaRepository<ProductModel, Long
     List<ProductModel> findByCategoryId(Long categoryId);
 
     List<ProductModel> findByBrandId(Long brandId);
+    
+    long countByIsDeletedFalse();
 
     @Query("SELECT pm FROM ProductModel pm WHERE pm.isDeleted = false " +
             "AND (:search IS NULL OR :search = '' OR LOWER(pm.name) LIKE LOWER(CONCAT('%', :search, '%'))) " +

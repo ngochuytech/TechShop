@@ -11,6 +11,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface IReviewService {
+    List<Review> getRecentReviews(int limit)  throws Exception;
+
     List<Review> getReviewByUser(String userEmail) throws Exception;
 
     List<Review> getReviewByProduct(String productId) throws Exception;

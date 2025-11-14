@@ -31,25 +31,16 @@ public class CartItem{
     private Integer quantity;
 
     @Column(name = "price", nullable = false)
-    private Long price; // Giá tại thời điểm thêm vào giỏ
+    private Long price;
 
-    /**
-     * Tính subtotal cho item này
-     */
     public Long getSubtotal() {
         return price * quantity;
     }
 
-    /**
-     * Kiểm tra xem item này là Product hay ProductVariant
-     */
     public boolean isProductVariant() {
         return productVariant != null;
     }
 
-    /**
-     * Lấy tên sản phẩm
-     */
     public String getProductName() {
         if (productVariant != null) {
             return productVariant.getProduct().getName();
@@ -57,9 +48,6 @@ public class CartItem{
         return product != null ? product.getName() : null;
     }
 
-    /**
-     * Lấy ảnh sản phẩm
-     */
     public String getProductImage() {
         if (productVariant != null) {
             return productVariant.getImage();
@@ -70,9 +58,6 @@ public class CartItem{
         return null;
     }
 
-    /**
-     * Lấy stock hiện có
-     */
     public Integer getAvailableStock() {
         if (productVariant != null) {
             return productVariant.getStock();

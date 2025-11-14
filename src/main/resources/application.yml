@@ -19,18 +19,36 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: <your_email>@gmail.com
-    password: <your_password>
+    username: 
+    password: 
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 
+            client-secret: 
+            redirect-uri: http://localhost:5173/oauth2/callback
 
 api:
   prefix: api/v1
 
+app:
+  frontend-url: http://localhost:5173
+  backend-url: http://localhost:8080
+
 jwt:
-  secret: EQOIAUgMdB/GxPmYT+uew/HLvOkYDOrAo3ihcFynD+Y=
-  expiration: 2592000
+  secret: 
+  expiration: 1800000 #30 minutes = 30 * 60
+  expiration-refresh-token: 604800000 #7 days = 7 * 24 * 60 * 60
+
+cloudinary:
+  cloud-name: 
+  api-key: 
+  api-secret: 

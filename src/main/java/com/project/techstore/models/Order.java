@@ -20,6 +20,12 @@ public class Order extends BaseEntity{
     @Column(name = "total_price",nullable = false)
     private Long totalPrice;
 
+    @Column(name = "subtotal_price")
+    private Long subtotalPrice;
+
+    @Column(name = "discount_amount")
+    private Long discountAmount;
+
     @Column(name = "shipping_fee")
     private Long shippingFee;
 
@@ -43,7 +49,7 @@ public class Order extends BaseEntity{
     @JoinColumn(name = "promotion_id")
     private Promotion promotion;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<OrderItem> orderItems;
 
     public enum Status {

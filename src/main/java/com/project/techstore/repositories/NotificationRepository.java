@@ -1,10 +1,11 @@
 package com.project.techstore.repositories;
 
-import com.project.techstore.models.Notification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
+import com.project.techstore.models.Notification;
 
 public interface NotificationRepository extends JpaRepository<Notification, String> {
-    List<Notification> findByUserId(String userId);
+    Page<Notification> findByUserId(String userId, Pageable pageable);
 }

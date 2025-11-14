@@ -10,4 +10,6 @@ import java.util.Set;
 public interface CategoryRepository extends JpaRepository<Category, Long> {
     @Query("SELECT c FROM Category c WHERE c.id IN :ids")
     Set<Category> findByIds(@Param("ids") Set<Long> ids);
+
+    boolean existsByName(String name);
 }

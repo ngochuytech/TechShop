@@ -26,17 +26,11 @@ public class Cart{
     @Builder.Default
     private List<CartItem> items = new ArrayList<>();
 
-    /**
-     * Thêm item vào giỏ hàng
-     */
     public void addItem(CartItem item) {
         items.add(item);
         item.setCart(this);
     }
-
-    /**
-     * Xóa item khỏi giỏ hàng
-     */
+    
     public void removeItem(CartItem item) {
         items.remove(item);
         item.setCart(null);

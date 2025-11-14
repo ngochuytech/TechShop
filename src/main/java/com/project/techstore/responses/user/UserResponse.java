@@ -21,6 +21,7 @@ public class UserResponse {
     private String phone;
     private String avatar;
     private LocalDate dateOfBirth;
+    private String role;
 
     private List<AddressResponse> addresses;
 
@@ -58,6 +59,7 @@ public class UserResponse {
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
+                .role(user.getRole().getName())
                 .addresses(addressResponses)
                 .avatar(user.getAvatar())
                 .dateOfBirth(user.getDateOfBirth())

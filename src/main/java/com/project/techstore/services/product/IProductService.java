@@ -18,11 +18,9 @@ public interface IProductService {
 
     List<Product> getProductByProductModel(Long productModelId) throws Exception;
 
-    List<ProductRespone> getProductByCategory(Long categoryId) throws Exception;
+    Page<ProductRespone> getProductByCategory(String category, Pageable pageable) throws Exception;
 
-    List<ProductRespone> getProductByCategory(String category) throws Exception;
-
-    List<ProductRespone> getProductByCategoryAndBrand(String category, String brand) throws Exception;
+    Page<ProductRespone> getProductByCategoryAndBrand(String category, String brand, Pageable pageable) throws Exception;
 
     List<ProductRespone> filterProducts(ProductFilterDTO productFilterDTO);
 

@@ -1,6 +1,6 @@
 package com.project.techstore.services.promotion;
 
-import com.project.techstore.dtos.admin.promotion.PromotionDTO;
+import com.project.techstore.dtos.admin.PromotionDTO;
 import com.project.techstore.exceptions.DataNotFoundException;
 import com.project.techstore.exceptions.InvalidParamException;
 import com.project.techstore.models.Promotion;
@@ -9,7 +9,6 @@ import com.project.techstore.repositories.OrderRepository;
 import com.project.techstore.repositories.PromotionRepository;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -95,21 +94,26 @@ public class PromotionService implements IPromotionService {
                 && !discountType.equals(Promotion.DiscountType.SHIPPING.name()))
             throw new InvalidParamException("Loại giảm giá không hợp lệ");
 
-        BeanUtils.copyProperties(promotionDTO, promotionExisting, "id");
+        promotionExisting.setTitle(promotionDTO.getTitle());
+        promotionExisting.setDescription(promotionDTO.getDescription());
+        promotionExisting.setDiscountType(promotionDTO.getDiscountType());
+        promotionExisting.setDiscountValue(promotionDTO.getDiscountValue());
+        promotionExisting.setStartDate(promotionDTO.getStartDate());
+        promotionExisting.setEndTime(promotionDTO.getEndTime());
+        promotionExisting.setMinOrderValue(promotionDTO.getMinOrderValue());
+        promotionExisting.setMaxDiscount(promotionDTO.getMaxDiscount());
+        
+        if (promotionDTO.getUsageLimitPerUser() != null) {
+            promotionExisting.setUsageLimitPerUser(promotionDTO.getUsageLimitPerUser());
+        }
+        if (promotionDTO.getTotalUsageLimit() != null) {
+            promotionExisting.setTotalUsageLimit(promotionDTO.getTotalUsageLimit());
+        }
+        if (promotionDTO.getIsForNewCustomer() != null) {
+            promotionExisting.setIsForNewCustomer(promotionDTO.getIsForNewCustomer());
+        }
+        
         return promotionRepository.save(promotionExisting);
-    }
-
-    @Override
-    public void deletePromotion(String promotionId) throws Exception {
-        Promotion promotion = promotionRepository.findById(promotionId)
-                .orElseThrow(() -> new DataNotFoundException("Mã khuyến mãi không tồn tại"));
-        promotion.setIsActive(false);
-        promotionRepository.save(promotion);
-    }
-
-    @Override
-    public Page<Promotion> getAllPromotions(Pageable pageable) throws Exception {
-        return promotionRepository.findByIsActiveTrue(pageable);
     }
 
     @Override
@@ -144,5 +148,10 @@ public class PromotionService implements IPromotionService {
             availablePromotions.add(promo);
         }
         return availablePromotions;
+    }
+
+    @Override
+    public Page<Promotion> getAllPromotions(Pageable pageable) throws Exception {
+        return promotionRepository.findAll(pageable);
     }
 }

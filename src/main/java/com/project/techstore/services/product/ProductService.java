@@ -20,7 +20,6 @@ import com.project.techstore.models.ProductAttribute;
 import com.project.techstore.models.ProductModel;
 import com.project.techstore.models.ProductVariant;
 import com.project.techstore.repositories.AttributeRepository;
-import com.project.techstore.repositories.CategoryRepository;
 import com.project.techstore.repositories.MediaRepository;
 import com.project.techstore.repositories.ProductAttributeRepository;
 import com.project.techstore.repositories.ProductModelRepository;
@@ -41,8 +40,6 @@ public class ProductService implements IProductService {
 
     private final ProductModelRepository productModelRepository;
 
-    private final CategoryRepository categoryRepository;
-
     private final MediaRepository mediaRepository;
 
     private final AttributeRepository attributeRepository;
@@ -62,29 +59,21 @@ public class ProductService implements IProductService {
     public List<Product> getProductByProductModel(Long productModelId) throws Exception {
         if (!productModelRepository.existsById(productModelId))
             throw new DataNotFoundException("This product model doesn't exist");
-        return productRepository.findByProductModelId(productModelId);
+        return productRepository.findByProductModelIdAndIsDeletedFalse(productModelId);
     }
 
     @Override
-    public List<ProductRespone> getProductByCategory(Long categoryId) throws Exception {
-        if (!categoryRepository.existsById(categoryId))
-            throw new DataNotFoundException("Category doesn't exist");
-        List<Product> productList = productRepository.findByProductModel_CategoryId(categoryId);
-        return productList.stream().map(product -> ProductRespone.fromProduct(product)).toList();
-    }
-
-    @Override
-    public List<ProductRespone> getProductByCategory(String category) throws Exception {
-        List<Product> productList = productRepository.findByProductModel_Category_Name(category);
-        return productList.stream().map(product -> ProductRespone.fromProduct(product)).toList();
+    public Page<ProductRespone> getProductByCategory(String category, Pageable pageable) throws Exception {
+        Page<Product> productList = productRepository.findByProductModel_Category_NameAndIsDeletedFalse(category, pageable);
+        return productList.map(product -> ProductRespone.fromProduct(product));
 
     }
 
     @Override
-    public List<ProductRespone> getProductByCategoryAndBrand(String category, String brand) throws Exception {
-        List<Product> productList = productRepository
-                .findByProductModel_Category_NameAndProductModel_Brand_Name(category, brand);
-        return productList.stream().map(product -> ProductRespone.fromProduct(product)).toList();
+    public Page<ProductRespone> getProductByCategoryAndBrand(String category, String brand, Pageable pageable) throws Exception {
+        Page<Product> productList = productRepository
+                .findByProductModel_Category_NameAndProductModel_Brand_NameAndIsDeletedFalse(category, brand, pageable);
+        return productList.map(product -> ProductRespone.fromProduct(product));
     }
 
     @Override
@@ -193,11 +182,7 @@ public class ProductService implements IProductService {
                 String value = entry.getValue();
 
                 Attribute attribute = attributeRepository.findByName(attrName)
-                        .orElseGet(() -> {
-                            Attribute newAttr = new Attribute();
-                            newAttr.setName(attrName);
-                            return attributeRepository.save(newAttr);
-                        });
+                        .orElseThrow(() -> new DataNotFoundException("Không có thuộc tính: " + attrName + " trong hệ thống"));
 
                 ProductAttribute productAttribute = ProductAttribute.builder()
                         .product(productExisting)
@@ -226,7 +211,6 @@ public class ProductService implements IProductService {
 
     @Override
     public List<ProductRespone> getSimilarProducts(String productId, int limit) throws Exception {
-        // Tìm sản phẩm hiện tại
         Product currentProduct = productRepository.findById(productId)
                 .orElseThrow(() -> new DataNotFoundException("Product not found"));
 
@@ -244,7 +228,6 @@ public class ProductService implements IProductService {
         List<Product> similarProducts = productRepository.findBySimilarCategoryAndDifferentId(
                 categoryId, productId, limit);
 
-        // Convert sang ProductRespone và trả về, giới hạn theo limit
         return similarProducts.stream()
                 .limit(limit)
                 .map(product -> ProductRespone.fromProduct(product))
@@ -282,7 +265,6 @@ public class ProductService implements IProductService {
                 .mapToInt(ProductVariant::getStock)
                 .sum();
 
-        // Cập nhật product
         product.setPrice(minPrice);
         product.setStock(totalStock);
         productRepository.save(product);
@@ -290,7 +272,7 @@ public class ProductService implements IProductService {
 
     @Override
     public Page<Product> searchProducts(String keyword, Pageable pageable) throws Exception {
-        Page<Product> productsPage = productRepository.findByNameContaining(keyword, pageable);
+        Page<Product> productsPage = productRepository.findByNameContainingAndIsDeletedFalse(keyword, pageable);
         return productsPage;
     }
 

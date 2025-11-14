@@ -4,6 +4,9 @@ import java.util.List;
 
 import com.project.techstore.models.Media;
 import com.project.techstore.models.Order;
+import com.project.techstore.models.OrderItem;
+import com.project.techstore.models.Product;
+import com.project.techstore.models.ProductVariant;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +24,8 @@ public class OrderResponse {
     private String id;
     private ShippingAddress shippingAddress;
     private Long totalPrice;
+    private Long subtotalPrice;
+    private Long discountAmount;
     private Long shippingFee;
     private String paymentMethod;
     private String status;
@@ -40,6 +45,7 @@ public class OrderResponse {
         
         private String fullName;
         private String phone;
+        private String email;
     }
 
     @AllArgsConstructor
@@ -61,26 +67,60 @@ public class OrderResponse {
                 .ward(order.getAddress().getWard())
                 .homeAddress(order.getAddress().getHomeAddress())
                 .fullName(order.getUser().getFullName())
-                .phone(order.getUser().getPhone())
+                .phone(order.getAddress().getPhone())
+                .email(order.getUser().getEmail())
                 .build();
         List<OrderItemResponse> orderItemResponses = order.getOrderItems().stream()
-            .map((com.project.techstore.models.OrderItem orderItem) -> OrderItemResponse.builder()
-                    .id(orderItem.getId())
-                    .productId(orderItem.getProduct().getId())
-                    .productName(orderItem.getProduct().getName())
-                    .productImage(orderItem.getProduct().getMediaList().stream()
+            .map((OrderItem orderItem) -> {
+                // Xác định sản phẩm (có thể là Product hoặc ProductVariant)
+                Product product = orderItem.getProduct();
+                ProductVariant variant = orderItem.getProductVariant();
+                String productId = null;
+                String productName = null;
+                String productImage = null;
+                
+                if (variant != null) {
+                    // Trường hợp có ProductVariant
+                    product = variant.getProduct();
+                    productId = variant.getId();
+                    productName = product != null ? product.getName() + " - " + variant.getColor() : "N/A";
+                    
+                    if (variant.getImage() != null && !variant.getImage().isEmpty()) {
+                        productImage = variant.getImage();
+                    } else if (product != null && product.getMediaList() != null) {
+                        productImage = product.getMediaList().stream()
+                            .filter(img -> img.getIsPrimary() == true)
+                            .findFirst()
+                            .map(Media::getMediaPath)
+                            .orElse(null);
+                    }
+                } else if (product != null) {
+                    // Trường hợp chỉ có Product
+                    productId = product.getId();
+                    productName = product.getName();
+                    productImage = product.getMediaList().stream()
                         .filter(img -> img.getIsPrimary() == true)
                         .findFirst()
                         .map(Media::getMediaPath)
-                        .orElse(null))
+                        .orElse(null);
+                }
+                
+                return OrderItemResponse.builder()
+                    .id(orderItem.getId())
+                    .productId(productId)
+                    .productName(productName)
+                    .productImage(productImage)
                     .quantity(Long.valueOf(orderItem.getQuantity()))
                     .price(orderItem.getPrice().doubleValue())
-                    .build())
+                    .build();
+            })
             .toList();
         return OrderResponse.builder()
                 .id(order.getId())
                 .shippingAddress(shippingAddress)
                 .totalPrice(order.getTotalPrice())
+                .subtotalPrice(order.getSubtotalPrice() != null ? order.getSubtotalPrice() : 0L)
+                .discountAmount(order.getDiscountAmount() != null ? order.getDiscountAmount() : 0L)
                 .shippingFee(order.getShippingFee() != null ? order.getShippingFee() : 0L)
                 .paymentMethod(order.getPaymentMethod())
                 .status(order.getStatus())

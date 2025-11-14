@@ -1,9 +1,9 @@
 package com.project.techstore.services;
 
-import com.project.techstore.dtos.UpdateCartItemRequest;
 import com.project.techstore.dtos.cart.AddToCartRequest;
 import com.project.techstore.dtos.cart.CartDTO;
 import com.project.techstore.dtos.cart.CartItemDTO;
+import com.project.techstore.dtos.cart.UpdateCartItemRequest;
 import com.project.techstore.exceptions.DataNotFoundException;
 import com.project.techstore.models.*;
 import com.project.techstore.repositories.*;
@@ -40,7 +40,7 @@ public class CartService {
     public CartDTO addToCart(String userId, AddToCartRequest request) throws Exception {
         // Validate request
         if (!request.isValid()) {
-            throw new IllegalArgumentException("Either productId or productVariantId must be provided");
+            throw new IllegalArgumentException("Yêu cầu 1 trong 2 trường productId hoặc productVariantId phải có");
         }
         
         User user = userRepository.findById(userId)
@@ -71,7 +71,6 @@ public class CartService {
             throw new IllegalArgumentException("Sản phẩm tồn kho không khả dung. Số lượng hiện có: " + availableStock);
         }
         
-        // Lấy hoặc tạo cart cho user
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseGet(() -> createCartForUser(user));
         
@@ -114,9 +113,6 @@ public class CartService {
         return convertToDTO(cart);
     }
 
-    /**
-     * Cập nhật số lượng sản phẩm trong giỏ
-     */
     @Transactional
     public CartDTO updateCartItem(String userId, String cartItemId, UpdateCartItemRequest request) throws Exception {
         Cart cart = cartRepository.findByUserId(userId)
@@ -142,9 +138,6 @@ public class CartService {
         return convertToDTO(cart);
     }
 
-    /**
-     * Xóa sản phẩm khỏi giỏ hàng
-     */
     @Transactional
     public CartDTO removeFromCart(String userId, String cartItemId) throws Exception {
         Cart cart = cartRepository.findByUserId(userId)
@@ -164,9 +157,6 @@ public class CartService {
         return convertToDTO(cart);
     }
 
-    /**
-     * Xóa toàn bộ giỏ hàng
-     */
     @Transactional
     public void clearCart(String userId) throws Exception {
         Cart cart = cartRepository.findByUserId(userId)
@@ -177,9 +167,6 @@ public class CartService {
         cartRepository.save(cart);
     }
 
-    /**
-     * Tạo cart mới cho user
-     */
     private Cart createCartForUser(User user) {
         Cart cart = Cart.builder()
                 .user(user)
@@ -188,9 +175,6 @@ public class CartService {
         return cartRepository.save(cart);
     }
 
-    /**
-     * Convert Cart entity sang CartDTO
-     */
     private CartDTO convertToDTO(Cart cart) {
         CartDTO dto = new CartDTO();
         dto.setId(cart.getId());
@@ -207,9 +191,6 @@ public class CartService {
         return dto;
     }
 
-    /**
-     * Convert CartItem entity sang CartItemDTO
-     */
     private CartItemDTO convertItemToDTO(CartItem item) {
         CartItemDTO dto = new CartItemDTO();
         dto.setId(item.getId());
@@ -229,7 +210,7 @@ public class CartService {
             dto.setProductName(item.getProduct().getName());
             dto.setImage(item.getProductImage());
             dto.setAvailableStock(item.getProduct().getStock());
-            dto.setColor(null); // Product không có color
+            dto.setColor(null);
         }
         
         dto.setQuantity(item.getQuantity());

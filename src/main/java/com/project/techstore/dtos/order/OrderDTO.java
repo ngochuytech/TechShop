@@ -33,5 +33,5 @@ public class OrderDTO {
     @NotEmpty(message = "Order must have at least one item")
     private List<OrderItemDTO> orderItemDTOs;
 
-    private String promotionCode; // Mã khuyến mãi (optional)
+    private String promotionCode; // optional
 }

@@ -21,7 +21,6 @@ public class VariantResponse {
 
     private String image;
     
-    // Tạo phương thức để chuyển đổi từ ProductVariant sang ColorResponse
     public static VariantResponse fromProductVariant(ProductVariant variant) {
         return VariantResponse.builder()
                 .id(variant.getId())

@@ -1,8 +1,8 @@
 package com.project.techstore.controllers.customer;
 
-import com.project.techstore.dtos.UpdateCartItemRequest;
 import com.project.techstore.dtos.cart.AddToCartRequest;
 import com.project.techstore.dtos.cart.CartDTO;
+import com.project.techstore.dtos.cart.UpdateCartItemRequest;
 import com.project.techstore.models.User;
 import com.project.techstore.responses.ApiResponse;
 import com.project.techstore.services.CartService;
@@ -24,18 +24,12 @@ public class CustomerCartController {
     
     private final CartService cartService;
 
-    /**
-     * GET /api/v1/cart - Lấy giỏ hàng của user hiện tại
-     */
     @GetMapping
     public ResponseEntity<ApiResponse<CartDTO>> getCart(@AuthenticationPrincipal User currentUser) throws Exception {
         CartDTO cart = cartService.getCartByUserId(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.ok(cart));
     }
 
-    /**
-     * POST /api/v1/cart/items - Thêm sản phẩm vào giỏ hàng
-     */
     @PostMapping("/items")
     public ResponseEntity<ApiResponse<CartDTO>> addToCart(
         @AuthenticationPrincipal User user,
@@ -54,9 +48,6 @@ public class CustomerCartController {
         .body(ApiResponse.ok(cart));
     }
 
-    /**
-     * PUT /api/v1/cart/items/{cartItemId} - Cập nhật số lượng sản phẩm trong giỏ
-     */
     @PutMapping("/items/{cartItemId}")
     public ResponseEntity<ApiResponse<CartDTO>> updateCartItem(
             @PathVariable String cartItemId,
@@ -75,9 +66,6 @@ public class CustomerCartController {
         return ResponseEntity.ok(ApiResponse.ok(cart));
     }
 
-    /**
-     * DELETE /api/v1/cart/items/{cartItemId} - Xóa sản phẩm khỏi giỏ hàng
-     */
     @DeleteMapping("/items/{cartItemId}")
     public ResponseEntity<ApiResponse<CartDTO>> removeFromCart(@PathVariable String cartItemId,
         @AuthenticationPrincipal User user) throws Exception {
@@ -85,9 +73,6 @@ public class CustomerCartController {
         return ResponseEntity.ok(ApiResponse.ok(cart));
     }
 
-    /**
-     * DELETE /api/v1/cart - Xóa toàn bộ giỏ hàng
-     */
     @DeleteMapping
     public ResponseEntity<ApiResponse<Void>> clearCart(@AuthenticationPrincipal User user) throws Exception {
         cartService.clearCart(user.getId());

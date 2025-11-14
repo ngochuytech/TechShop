@@ -18,11 +18,18 @@ public class PromotionResponse {
     private String title;
     private String code;
     private String description;
-    private String type;
-    private Long discount;
-    private LocalDateTime expiry;
-    private Long minOrder;
+    private String discountType;
+    private Long discountValue;
+    private LocalDateTime startDate;
+    private LocalDateTime endTime;
+    private Long minOrderValue;
     private Long maxDiscount;
+    private Boolean isActive;
+    private Integer usageLimitPerUser;
+    private Boolean isForNewCustomer;
+    private Integer totalUsageLimit;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static PromotionResponse fromEntity(com.project.techstore.models.Promotion promotion) {
         return PromotionResponse.builder()
@@ -30,11 +37,18 @@ public class PromotionResponse {
                 .title(promotion.getTitle())
                 .code(promotion.getCode())
                 .description(promotion.getDescription())
-                .type(promotion.getDiscountType())
-                .discount(promotion.getDiscountValue())
-                .expiry(promotion.getEndTime())
-                .minOrder(promotion.getMinOrderValue())
+                .discountType(promotion.getDiscountType())
+                .discountValue(promotion.getDiscountValue())
+                .startDate(promotion.getStartDate())
+                .endTime(promotion.getEndTime())
+                .minOrderValue(promotion.getMinOrderValue())
                 .maxDiscount(promotion.getMaxDiscount())
+                .isActive(promotion.getIsActive())
+                .usageLimitPerUser(promotion.getUsageLimitPerUser())
+                .isForNewCustomer(promotion.getIsForNewCustomer())
+                .totalUsageLimit(promotion.getTotalUsageLimit())
+                .createdAt(promotion.getCreatedAt())
+                .updatedAt(promotion.getUpdatedAt())
                 .build();
     }
 }

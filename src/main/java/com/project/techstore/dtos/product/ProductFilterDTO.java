@@ -14,10 +14,10 @@ public class ProductFilterDTO {
     private Map<String, List<String>> attributes;
 
     @JsonProperty("min_price")
-    private Long minPrice;  // Giá tối thiểu (inclusive)
+    private Long minPrice;
 
     @JsonProperty("max_price")
-    private Long maxPrice;  // Giá tối đa (inclusive)
+    private Long maxPrice;
 
     private String brand;
 }

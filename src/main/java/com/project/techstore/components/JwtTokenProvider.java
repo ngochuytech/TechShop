@@ -40,7 +40,7 @@ public class JwtTokenProvider {
 
         Date currentDate = new Date();
 
-        Date expireDate = new Date(currentDate.getTime() + jwtExpirationDate  * 1000);
+        Date expireDate = new Date(currentDate.getTime() + jwtExpirationDate );
 
         return Jwts.builder()
                 .subject(username)
@@ -55,7 +55,7 @@ public class JwtTokenProvider {
 
         Date currentDate = new Date();
 
-        Date expireDate = new Date(currentDate.getTime() + jwtExpirationDate * 1000);
+        Date expireDate = new Date(currentDate.getTime() + jwtExpirationDate);
 
         return Jwts.builder()
                 .subject(username)
@@ -70,7 +70,6 @@ public class JwtTokenProvider {
         return Keys.hmacShaKeyFor(bytes);
     }
 
-    // get username from JWT token
     public String getUsername(String token) {
         try {
             return Jwts.parser()
@@ -94,11 +93,10 @@ public class JwtTokenProvider {
         }
     }
 
-    // validate JWT token
     public boolean validateToken(String token, User user) {
         try {
+            // Email
             String subject = extractClaim(token, Claims::getSubject);
-            // Subject là email
 
             // Kiểm tra token tồn tại trong DB ko ?
             Token existingToken = tokenRepository.findByToken(token);
@@ -116,7 +114,6 @@ public class JwtTokenProvider {
             }
             return subject.equals(user.getUsername());
         } catch (ExpiredTokenException | RevokedTokenException | UnauthorizedException | InvalidTokenException e) {
-            // Re-throw custom exceptions
             throw e;
         } catch (ExpiredJwtException e) {
             throw new ExpiredTokenException("Token đã hết hạn. Vui lòng đăng nhập lại");
@@ -134,11 +131,11 @@ public class JwtTokenProvider {
     }
     private Claims extractAllClaims(String token) {
         try {
-            return Jwts.parser()  // Khởi tạo JwtParserBuilder
-                    .verifyWith(key())  // Sử dụng verifyWith() để thiết lập signing key
-                    .build()  // Xây dựng JwtParser
-                    .parseSignedClaims(token)  // Phân tích token đã ký
-                    .getPayload();  // Lấy phần body của JWT, chứa claims
+            return Jwts.parser()
+                    .verifyWith(key())
+                    .build() 
+                    .parseSignedClaims(token)
+                    .getPayload();
         } catch (ExpiredJwtException e) {
             throw new ExpiredTokenException("Token đã hết hạn. Vui lòng đăng nhập lại");
         } catch (MalformedJwtException e) {

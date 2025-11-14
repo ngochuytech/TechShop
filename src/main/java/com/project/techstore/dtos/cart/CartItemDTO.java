@@ -20,5 +20,5 @@ public class CartItemDTO {
     private Long price;
     private Long subtotal;
     private Integer availableStock;
-    private boolean isVariant; // true nếu là variant, false nếu là product thường
+    private boolean isVariant;
 }

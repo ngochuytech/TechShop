@@ -30,7 +30,9 @@ public interface IUserService{
     void resetPassword(String token, String newPassword) throws Exception;
 
     User getUserByToken(String token) throws Exception;
-    // Admin
+
+    void changePassword(User user, String currentPassword, String newPassword) throws Exception;
+    
     List<User> getUserList();
 
     User setActiveUser(String id, Boolean isActive) throws Exception;

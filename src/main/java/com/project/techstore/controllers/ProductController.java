@@ -7,17 +7,23 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.project.techstore.dtos.product.ProductFilterDTO;
 import com.project.techstore.models.Product;
 import com.project.techstore.responses.ApiResponse;
 import com.project.techstore.responses.product.ProductRespone;
 import com.project.techstore.services.product.IProductService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -49,22 +55,33 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.ok(productRespone));
     }
 
-    @GetMapping("/category/{id}")
-    public ResponseEntity<?> getProductByCategory(@PathVariable("id") Long categoryId) throws Exception {
-        List<ProductRespone> productResponeList = productService.getProductByCategory(categoryId);
-        return ResponseEntity.ok(ApiResponse.ok(productResponeList));
-    }
-
     @GetMapping("/category")
-    public ResponseEntity<?> getProductByCategory(@RequestParam("category") String categoryName) throws Exception {
-        List<ProductRespone> productResponeList = productService.getProductByCategory(categoryName);
+    public ResponseEntity<?> getProductByCategory(@RequestParam("category") String categoryName,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir)
+            throws Exception {
+
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<ProductRespone> productResponeList = productService.getProductByCategory(categoryName, pageable);
         return ResponseEntity.ok(ApiResponse.ok(productResponeList));
     }
 
     @GetMapping("/category/{category}/brand/{brand}")
     public ResponseEntity<?> getProductByCategoryAndBrand(@PathVariable("category") String categoryName,
-            @PathVariable("brand") String brandName) throws Exception {
-        List<ProductRespone> productResponeList = productService.getProductByCategoryAndBrand(categoryName, brandName);
+            @PathVariable("brand") String brandName,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir)
+            throws Exception {
+
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<ProductRespone> productResponeList = productService.getProductByCategoryAndBrand(categoryName, brandName,
+                pageable);
         return ResponseEntity.ok(ApiResponse.ok(productResponeList));
     }
 
@@ -89,6 +106,20 @@ public class ProductController {
         Page<Product> variants = productService.searchProducts(keyword, pageable);
         Page<ProductRespone> responsePage = variants.map(ProductRespone::fromProduct);
         return ResponseEntity.ok(ApiResponse.ok(responsePage));
+    }
+
+    @PostMapping("/filters")
+    public ResponseEntity<?> getProductBySpecs(
+            @RequestBody @Valid ProductFilterDTO filter, BindingResult result) throws Exception {
+        if (result.hasErrors()) {
+            List<String> errorMessages = result.getFieldErrors()
+                    .stream()
+                    .map(FieldError::getDefaultMessage)
+                    .toList();
+            return ResponseEntity.badRequest().body(ApiResponse.error(String.join(", ", errorMessages)));
+        }
+        List<ProductRespone> productResponeList = productService.filterProducts(filter);
+        return ResponseEntity.ok(ApiResponse.ok(productResponeList));
     }
 
 }

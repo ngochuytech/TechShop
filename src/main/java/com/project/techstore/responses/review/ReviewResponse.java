@@ -21,8 +21,7 @@ public class ReviewResponse {
     private String comment;
     private UserResponse user;
 
-    @JsonProperty("product_id")
-    private String productId;
+    private ProductResponse product;
 
     @JsonProperty("created_at")
     private String createdAt;
@@ -49,13 +48,35 @@ public class ReviewResponse {
         }
     }
 
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    public static class ProductResponse {
+        private String id;
+        private String name;
+
+        public static ProductResponse fromProduct(com.project.techstore.models.Product product) {
+            return ProductResponse.builder()
+                    .id(product.getId())
+                    .name(product.getName())
+                    .build();
+        }
+    }
+
     public static ReviewResponse fromReview(Review review) {
+        ProductResponse productResponse = ProductResponse.builder()
+                .id(review.getProduct().getId())
+                .name(review.getProduct().getName())
+                .build();
+
         return ReviewResponse.builder()
                 .id(review.getId())
                 .rating(review.getRating())
                 .comment(review.getComment())
                 .user(UserResponse.fromUser(review.getUser()))
-                .productId(review.getProduct().getId())
+                .product(productResponse)
                 .createdAt(review.getCreatedAt().toString())
                 .updatedAt(review.getUpdatedAt().toString())
                 .build();

@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.project.techstore.dtos.product.ProductDTO;
-import com.project.techstore.dtos.product.ProductFilterDTO;
 import com.project.techstore.models.Product;
 import com.project.techstore.responses.ApiResponse;
 import com.project.techstore.responses.product.ProductRespone;
@@ -53,20 +52,6 @@ public class AdminProductController {
         Page<Product> productModels = productService.getAllProductWithoutDeleted(search, productModelId, pageable);
         Page<ProductRespone> responses = productModels.map(ProductRespone::fromProduct);
         return ResponseEntity.ok(ApiResponse.ok(responses));
-    }
-
-    @PostMapping("/filters")
-    public ResponseEntity<?> getProductBySpecs(
-            @RequestBody @Valid ProductFilterDTO filter, BindingResult result) throws Exception {
-        if (result.hasErrors()) {
-            List<String> errorMessages = result.getFieldErrors()
-                    .stream()
-                    .map(FieldError::getDefaultMessage)
-                    .toList();
-            return ResponseEntity.badRequest().body(ApiResponse.error(String.join(", ", errorMessages)));
-        }
-        List<ProductRespone> productResponeList = productService.filterProducts(filter);
-        return ResponseEntity.ok(ApiResponse.ok(productResponeList));
     }
 
     @PostMapping(value = "/create", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })

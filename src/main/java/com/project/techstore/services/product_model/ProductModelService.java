@@ -4,10 +4,13 @@ import com.project.techstore.dtos.product.ProductModelDTO;
 import com.project.techstore.exceptions.DataNotFoundException;
 import com.project.techstore.models.Brand;
 import com.project.techstore.models.Category;
+import com.project.techstore.models.Product;
 import com.project.techstore.models.ProductModel;
 import com.project.techstore.repositories.BrandRepository;
 import com.project.techstore.repositories.CategoryRepository;
 import com.project.techstore.repositories.ProductModelRepository;
+import com.project.techstore.repositories.ProductRepository;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
@@ -25,6 +28,8 @@ public class ProductModelService implements IProductModelService {
         private final CategoryRepository categoryRepository;
 
         private final BrandRepository brandRepository;
+
+        private final ProductRepository productRepository;
 
         @Override
         public Page<ProductModel> getAllProductModelsWithoutDeleted(String search, Long categoryId, Long brandId, Pageable pageable) {
@@ -80,6 +85,11 @@ public class ProductModelService implements IProductModelService {
                 ProductModel productModel = productModelRepository.findById(id)
                                 .orElseThrow(() -> new DataNotFoundException("Product model doesn't exist"));
                 productModel.setDeleted(true);
+                List<Product> products = productModel.getProducts();
+                for (Product product : products) {
+                        product.setDeleted(true);
+                }
+                productRepository.saveAll(products);
                 productModelRepository.save(productModel);
         }
 }

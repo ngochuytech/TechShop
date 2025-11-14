@@ -39,7 +39,7 @@ public class TokenService implements ITokenService{
         if (tokenCount >= MAX_TOKENS) {
             tokenRepository.delete(userTokens.getFirst());
         }
-        LocalDateTime expirationDateTime = LocalDateTime.now().plusSeconds(expiration);
+        LocalDateTime expirationDateTime = LocalDateTime.now().plusNanos(expiration * 1000000);
         Token newToken = Token.builder()
                 .user(user)
                 .token(token)
@@ -49,7 +49,7 @@ public class TokenService implements ITokenService{
                 .expirationDate(expirationDateTime)
                 .build();
         newToken.setRefreshToken(UUID.randomUUID().toString());
-        newToken.setRefreshExpirationDate(LocalDateTime.now().plusSeconds(expirationRefreshToken));
+        newToken.setRefreshExpirationDate(LocalDateTime.now().plusNanos(expirationRefreshToken * 1000000));
         return tokenRepository.save(newToken);
     }
 
@@ -65,11 +65,11 @@ public class TokenService implements ITokenService{
             throw new ExpiredTokenException("Refresh token đã hết hạn");
         }
         String token = jwtTokenProvider.generateToken(user);
-        LocalDateTime expirationDateTime = LocalDateTime.now().plusSeconds(expiration);
+        LocalDateTime expirationDateTime = LocalDateTime.now().plusNanos(expiration * 1000000);
         existingToken.setExpirationDate(expirationDateTime);
         existingToken.setToken(token);
         existingToken.setRefreshToken(UUID.randomUUID().toString());
-        existingToken.setRefreshExpirationDate(LocalDateTime.now().plusSeconds(expirationRefreshToken));
+        existingToken.setRefreshExpirationDate(LocalDateTime.now().plusNanos(expirationRefreshToken * 1000000));
         return tokenRepository.save(existingToken);
 
     }
@@ -82,5 +82,11 @@ public class TokenService implements ITokenService{
     @Override
     public Token save(Token token) {
         return tokenRepository.save(token);
+    }
+
+    @Override
+    @Transactional
+    public void revokeToken(String refreshToken) throws Exception {
+        tokenRepository.deleteByRefreshToken(refreshToken);
     }
 }

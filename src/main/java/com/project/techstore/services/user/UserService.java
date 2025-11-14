@@ -17,6 +17,7 @@ import com.project.techstore.repositories.PasswordResetTokenRepository;
 import com.project.techstore.repositories.RoleRepository;
 import com.project.techstore.repositories.UserRepository;
 import com.project.techstore.services.CloudinaryService;
+import com.project.techstore.services.verification.IVerificationTokenService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -50,6 +51,8 @@ public class UserService implements IUserService {
     private final AuthenticationManager authenticationManager;
 
     private final JwtTokenProvider jwtTokenProvider;
+    
+    private final IVerificationTokenService verificationTokenService;
 
     @Override
     public User createUser(UserDTO userDTO) throws Exception {
@@ -72,13 +75,24 @@ public class UserService implements IUserService {
                 .isActive(true)
                 .enable(false)
                 .build();
-        return userRepository.save(newUser);
+        User savedUser = userRepository.save(newUser);
+        
+        try {
+            verificationTokenService.createVerificaitonEmailToken(email);
+        } catch (Exception e) {
+            System.err.println("Không thể gửi email xác thực: " + e.getMessage());
+        }
+        
+        return savedUser;
     }
 
     @Override
     public String loginUser(UserLoginDTO userLoginDTO) throws Exception {
         User user = userRepository.findByEmail(userLoginDTO.getEmail())
                 .orElseThrow(() -> new Exception("Email hoặc mật khẩu không đúng!"));
+        if(user.getEnable() == false){
+            throw new Exception("Tài khoản của bạn chưa được kích hoạt. Vui lòng kiểm tra email để kích hoạt tài khoản.");
+        }
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 userLoginDTO.getEmail(),
                 userLoginDTO.getPassword(),
@@ -140,7 +154,7 @@ public class UserService implements IUserService {
                 .orElseThrow(() -> new InvalidParamException("Token không hợp lệ"));
 
         if (passwordResetToken.getExpiryDate().isBefore(LocalDateTime.now()))
-            throw new Exception("Token đã hết hạn");
+            throw new Exception("Token đã hết hạn. Vui lòng gửi lại yêu cầu đặt lại mật khẩu.");
 
         User user = passwordResetToken.getUser();
         user.setPassword(passwordEncoder.encode(newPassword));
@@ -194,6 +208,21 @@ public class UserService implements IUserService {
         }
         String avatarUrl = cloudinaryService.uploadUserImage(avatar, user.getId());
         user.setAvatar(avatarUrl);
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(User user, String currentPassword, String newPassword) throws Exception {
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new InvalidParamException("Mật khẩu hiện tại không đúng");
+        }
+
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new InvalidParamException("Mật khẩu mới không được trùng với mật khẩu hiện tại");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
 

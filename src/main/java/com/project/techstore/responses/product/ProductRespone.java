@@ -35,8 +35,6 @@ public class ProductRespone {
 
         private Map<String, String> attributes;
 
-        private String promotion;
-
         @JsonProperty("configuration_summary")
         private String configurationSummary;
 
@@ -94,7 +92,6 @@ public class ProductRespone {
                                 .description(product.getDescription())
                                 .colors(colorResponses)
                                 .attributes(attributes)
-                                .promotion("") // Chưa xử lý
                                 .productModel(productModelResponse)
                                 .averageRating(averageRating)
                                 .reviewCount(reviewCount)

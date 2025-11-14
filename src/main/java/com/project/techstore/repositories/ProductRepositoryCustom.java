@@ -2,7 +2,6 @@ package com.project.techstore.repositories;
 
 import com.project.techstore.dtos.product.ProductFilterDTO;
 import com.project.techstore.models.Product;
-import com.project.techstore.models.ProductAttribute;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.*;
@@ -10,7 +9,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Repository
 public class ProductRepositoryCustom {
@@ -31,24 +29,6 @@ public class ProductRepositoryCustom {
             predicates.add(cb.equal(product.get("productModel").get("brand").get("name"), filter.getBrand()));
         }
 
-        // Điều kiện attributes (RAM, CPU, GPU hoặc Size_screen, Resolution)
-        if (filter.getAttributes() != null && !filter.getAttributes().isEmpty()) {
-            for (Map.Entry<String, List<String>> entry : filter.getAttributes().entrySet()) {
-                String attribute = entry.getKey();
-                List<String> values = entry.getValue();
-                if (values != null && !values.isEmpty()) {
-                    Join<Product, ProductAttribute> pa = product.join("productAttributes");
-                    predicates.add(cb.equal(pa.get("attribute").get("name"), attribute));
-                    // Tạo điều kiện OR cho từng giá trị với LIKE
-                    List<Predicate> valuePredicates = new ArrayList<>();
-                    for (String value : values) {
-                        valuePredicates.add(cb.like(pa.get("value"), "%" + value + "%"));
-                    }
-                    predicates.add(cb.or(valuePredicates.toArray(new Predicate[0])));
-                }
-            }
-        }
-
         // Điều kiện khoảng giá (lọc theo price)
         if (filter.getMinPrice() != null) {
             predicates.add(cb.greaterThanOrEqualTo(product.get("price"), filter.getMinPrice()));
@@ -56,6 +36,9 @@ public class ProductRepositoryCustom {
         if (filter.getMaxPrice() != null) {
             predicates.add(cb.lessThanOrEqualTo(product.get("price"), filter.getMaxPrice()));
         }
+
+        // Thêm điều kiện không bị xóa
+        predicates.add(cb.equal(product.get("isDeleted"), false));
 
         query.select(product).distinct(true).where(predicates.toArray(new Predicate[0]));
         return entityManager.createQuery(query).getResultList();

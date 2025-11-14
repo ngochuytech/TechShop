@@ -29,7 +29,6 @@ public class ProductVariantService implements IProductVariantService {
     @Override
     @Transactional
     public ProductVariant createVariant(ProductVariantDTO productVariantDTO, MultipartFile image) throws Exception {
-        // Kiểm tra Product có tồn tại không
         Product product = productRepository.findById(productVariantDTO.getProductId())
                 .orElseThrow(() -> new DataNotFoundException("Product not found with ID: " + productVariantDTO.getProductId()));
         
@@ -42,25 +41,21 @@ public class ProductVariantService implements IProductVariantService {
             throw new IllegalArgumentException("Color '" + productVariantDTO.getColor() + "' already exists for this product");
         }
         
-        // Tạo ProductVariant mới
         ProductVariant variant = ProductVariant.builder()
                 .product(product)
                 .color(productVariantDTO.getColor())
                 .stock(productVariantDTO.getStock())
-                .price(productVariantDTO.getPrice()) // Có thể null
-                .image("") // Sẽ cập nhật sau khi upload
+                .price(productVariantDTO.getPrice())
+                .image("")
                 .isDeleted(false)
                 .build();
         
-        // Save variant trước để có ID
         variant = productVariantRepository.save(variant);
         
         // Xử lý upload ảnh nếu có
         if (image != null && !image.isEmpty()) {
-            // Upload lên Cloudinary
             String imageUrl = cloudinaryService.uploadVariantImage(image, variant.getId());
             
-            // Cập nhật đường dẫn ảnh
             variant.setImage(imageUrl);
             variant = productVariantRepository.save(variant);
         }
@@ -77,7 +72,6 @@ public class ProductVariantService implements IProductVariantService {
         ProductVariant existingVariant = productVariantRepository.findById(variantId)
                 .orElseThrow(() -> new DataNotFoundException("Product variant not found with ID: " + variantId));
         
-        // Cập nhật thông tin
         existingVariant.setColor(productVariantDTO.getColor());
         existingVariant.setStock(productVariantDTO.getStock());
         existingVariant.setPrice(productVariantDTO.getPrice());
@@ -86,7 +80,6 @@ public class ProductVariantService implements IProductVariantService {
             existingVariant.setImage(imageUrl);
         }
         
-        // Cập nhật price và stock của Product parent dựa trên variants
         updateProductPriceAndStockFromVariants(existingVariant.getProduct().getId());
         
         return productVariantRepository.save(existingVariant);
@@ -102,7 +95,6 @@ public class ProductVariantService implements IProductVariantService {
     
         variant.setDeleted(true);
         
-        // Cập nhật price và stock của Product parent dựa trên variants còn lại
         updateProductPriceAndStockFromVariants(productId);
     }
     

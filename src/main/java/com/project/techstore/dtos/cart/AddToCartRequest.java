@@ -12,8 +12,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AddToCartRequest {
-    // Có thể là productId hoặc productVariantId
-    // Nếu có productVariantId thì ưu tiên, không thì dùng productId
     private String productId;
     
     private String productVariantId;

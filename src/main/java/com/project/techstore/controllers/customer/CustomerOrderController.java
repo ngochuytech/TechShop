@@ -9,6 +9,11 @@ import com.project.techstore.services.order.IOrderService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,6 +22,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("${api.prefix}/customer/orders")
@@ -24,17 +30,39 @@ import java.util.List;
 public class CustomerOrderController {
     private final IOrderService orderService;
 
+    @GetMapping("/count-by-status")
+    public ResponseEntity<?> getOrderCountByStatus(@AuthenticationPrincipal User user) throws Exception {
+        Map<String, Long> statusCounts = orderService.getOrderCountByStatusForUser(user);
+        return ResponseEntity.ok(ApiResponse.ok(statusCounts));
+    }
+
     @GetMapping("/status")
-    public ResponseEntity<ApiResponse<?>> getOrderByStatus(@RequestParam String status) throws Exception {
-        return ResponseEntity.ok(ApiResponse.ok(orderService.getOrderByStatus(status)));
+    public ResponseEntity<?> getOrderByStatus(@RequestParam String status, 
+    @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir)
+            throws Exception {
+
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Order> orders = orderService.getOrderByStatus(status, pageable);
+        Page<OrderResponse> orderResponses = orders.map(OrderResponse::fromOrder);
+        return ResponseEntity.ok(ApiResponse.ok(orderResponses));
     }
 
     @GetMapping("/user")
-    public ResponseEntity<ApiResponse<?>> getOrderByUser(@AuthenticationPrincipal User user) throws Exception {
-        List<Order> orders = orderService.getOrderByUser(user.getId());
-        List<OrderResponse> orderResponses = orders.stream()
-                .map(OrderResponse::fromOrder)
-                .toList();
+    public ResponseEntity<?> getOrderByUser(@AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir)
+            throws Exception {
+
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Order> orders = orderService.getOrderByUser(user, pageable);
+        Page<OrderResponse> orderResponses = orders.map(OrderResponse::fromOrder);
         return ResponseEntity.ok(ApiResponse.ok(orderResponses));
     }
 
@@ -44,13 +72,12 @@ public class CustomerOrderController {
         return ResponseEntity.ok(ApiResponse.ok(OrderResponse.fromOrder(order)));
     }
 
-
     @PostMapping("")
-    public ResponseEntity<ApiResponse<?>> createOrder(
+    public ResponseEntity<?> createOrder(
             @RequestBody @Valid CreateOrderRequest request,
             @AuthenticationPrincipal User user,
             BindingResult result) throws Exception {
-        if(result.hasErrors()){
+        if (result.hasErrors()) {
             List<String> errorMessages = result.getFieldErrors()
                     .stream()
                     .map(FieldError::getDefaultMessage)
@@ -58,13 +85,13 @@ public class CustomerOrderController {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(String.join(", ", errorMessages)));
         }
-        Order order = orderService.createOrder(user.getId(), request.getOrderDTO(), request.getAddressDTO());
+        Order order = orderService.createOrder(user, request.getOrderDTO(), request.getAddressDTO());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(OrderResponse.fromOrder(order)));
     }
 
     @PutMapping("/{orderId}/cancel")
-    public ResponseEntity<ApiResponse<?>> cancelOrder(@AuthenticationPrincipal User user,
+    public ResponseEntity<?> cancelOrder(@AuthenticationPrincipal User user,
             @PathVariable("orderId") String orderId) throws Exception {
         orderService.cancelOrder(user.getId(), orderId);
         return ResponseEntity.ok(ApiResponse.ok("Hủy đơn hàng thành công"));

@@ -40,13 +40,32 @@ public class WebSecurityConfig  {
                         .requestMatchers(
                                 String.format("%s/users/register", apiPrefix),
                                 String.format("%s/users/login", apiPrefix),
+                                String.format("%s/users/logout", apiPrefix),
+                                String.format("%s/users/refresh-token", apiPrefix),
                                 String.format("%s/verify/**", apiPrefix),
                                 String.format("%s/users/auth/social-login", apiPrefix),
-                                String.format("%s/users/auth/social/callback", apiPrefix)
+                                String.format("%s/users/auth/social/callback", apiPrefix),
+                                String.format("%s/auth/forgot-password", apiPrefix),
+                                String.format("%s/auth/reset-password", apiPrefix),
+                                String.format("%s/banners/**", apiPrefix),
+                                String.format("%s/reviews/**", apiPrefix),
+                                String.format("%s/brands/**", apiPrefix),
+                                String.format("%s/categories/**", apiPrefix)
                         ).permitAll()
+                        
                         .requestMatchers(HttpMethod.GET, String.format("%s/products/**", apiPrefix)).permitAll()
-                        .requestMatchers(HttpMethod.POST,apiPrefix + "/products/filters").permitAll()
-                        .anyRequest().permitAll()
+                        .requestMatchers(HttpMethod.POST, String.format("%s/products/filters", apiPrefix)).permitAll()
+                        
+                        .requestMatchers(String.format("%s/admin/**", apiPrefix))
+                            .hasRole("ADMIN")
+                        
+                        .requestMatchers(String.format("%s/customer/**", apiPrefix))
+                            .authenticated()
+                        
+                        .requestMatchers(String.format("%s/users/**", apiPrefix))
+                            .authenticated()
+                        
+                        .anyRequest().authenticated()
                 );
         return http.build();
     }
