@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/techstore?useSSL=false
-    username: root
-    password:
+    url: jdbc:mysql://${MYSQL_HOST}/${MYSQL_DATABASE:techstore}?useSSL=false
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     show-sql: true
@@ -19,8 +19,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: 
-    password: 
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -32,23 +32,23 @@ spring:
       client:
         registration:
           google:
-            client-id: 
-            client-secret: 
-            redirect-uri: http://localhost:5173/oauth2/callback
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: ${FRONTEND_URL}/oauth2/callback
 
 api:
   prefix: api/v1
 
 app:
-  frontend-url: http://localhost:5173
-  backend-url: http://localhost:8080
+  frontend-url: ${FRONTEND_URL}
+  backend-url: ${BACKEND_URL}
 
 jwt:
-  secret: 
+  secret: EQOIAUgMdB/GxPmYT+uew/HLvOkYDOrAo3ihcFynD+Y=
   expiration: 1800000 #30 minutes = 30 * 60
   expiration-refresh-token: 604800000 #7 days = 7 * 24 * 60 * 60
 
 cloudinary:
-  cloud-name: 
-  api-key: 
-  api-secret: 
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
